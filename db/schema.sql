@@ -132,10 +132,11 @@ CREATE TABLE IF NOT EXISTS attendance_sessions (
   overtime_hours  DECIMAL(5,2) DEFAULT 0,
   late_minutes    INTEGER DEFAULT 0,
   status          VARCHAR(20) DEFAULT 'open' CHECK (status IN ('open','closed','incomplete','corrected')),
-  payroll_period  VARCHAR(20),                   -- ej: '2026-05-15/2026-05-31'
+  payroll_period  VARCHAR(20),                   -- ej: '2026-05-01/2026-05-31'
+  turn_number     INTEGER DEFAULT 1,             -- 1=primer turno, 2=segundo turno (SAC, etc.)
   created_at      TIMESTAMPTZ DEFAULT NOW(),
   updated_at      TIMESTAMPTZ DEFAULT NOW(),
-  UNIQUE(user_id, session_date)
+  UNIQUE(user_id, session_date, turn_number)
 );
 
 -- ============================================================
@@ -275,6 +276,4 @@ INSERT INTO shifts (name, start_time, end_time, crosses_midnight, tolerance_in_m
   ('Turno Mañana',   '06:00', '14:00', false, 5, 8.0),
   ('Turno Tarde',    '14:00', '22:00', false, 5, 8.0),
   ('Turno Noche',    '22:00', '06:00', true,  5, 8.0),
-  ('Jornada Diurna', '08:00', '17:00', false, 5, 8.0),
-  ('Jornada Flexible','07:00','17:00', false, 15, 8.0)
-ON CONFLICT DO NOTHING;
+  ('Jornada Diurna', '08:

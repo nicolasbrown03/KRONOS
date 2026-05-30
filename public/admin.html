@@ -218,7 +218,7 @@ tr:hover td{background:#f8fafc}
   <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px">
     <button class="btn btn-primary" onclick="loadRangeReport()">Ver reporte</button>
     <button class="btn btn-success" onclick="exportReport('xlsx')">⬇ Exportar Excel (nómina)</button>
-    <button class="btn btn-neutral" onclick="loadQuincena()">📅 Generar 15→15</button>
+    <button class="btn btn-neutral" onclick="loadMensual()">📅 Generar mensual (1→30)</button>
   </div>
 
   <div id="repSummaryGrid" style="display:none">
@@ -551,17 +551,22 @@ async function exportReport(){
   window.location.href=`${API}/api/reports/range?start=${start}&end=${end}&area=${encodeURIComponent(area)}&employee_id=${emp}&format=xlsx`;
 }
 
-function loadQuincena(){
-  const y=prompt('Año:',new Date().getFullYear()); if(!y) return;
-  const m=prompt('Mes (1-12):',new Date().getMonth()+1); if(!m) return;
-  const d1=`${y}-${String(m).padStart(2,'0')}-15`;
-  const nextM=parseInt(m)===12?1:parseInt(m)+1;
-  const nextY=parseInt(m)===12?parseInt(y)+1:parseInt(y);
-  const d2=`${nextY}-${String(nextM).padStart(2,'0')}-14`;
-  document.getElementById('rep-start').value=d1;
-  document.getElementById('rep-end').value=d2;
+function loadMensual(){
+  const now = new Date();
+  const y = prompt('Año:', now.getFullYear()); if(!y) return;
+  const m = prompt('Mes (1-12):', now.getMonth()+1); if(!m) return;
+  const mi = parseInt(m), yi = parseInt(y);
+  // Primer día del mes
+  const d1 = `${yi}-${String(mi).padStart(2,'0')}-01`;
+  // Último día del mes (0 del mes siguiente = último del mes actual)
+  const lastDay = new Date(yi, mi, 0).getDate();
+  const d2 = `${yi}-${String(mi).padStart(2,'0')}-${lastDay}`;
+  document.getElementById('rep-start').value = d1;
+  document.getElementById('rep-end').value   = d2;
   loadRangeReport();
 }
+// Alias por compatibilidad
+function loadQuincena(){ loadMensual(); }
 
 // ─────────────────────── CORRECTIONS ───────────────────────
 async function loadCorrections(status='pending'){
@@ -642,13 +647,4 @@ function openAddShift(){
   const end=prompt('Hora fin (HH:MM):','17:00');
   const tol=prompt('Tolerancia entrada (minutos):','5');
   api('/api/shifts',{method:'POST',body:JSON.stringify({name,start_time:start,end_time:end,tolerance_in_min:parseInt(tol)||5})})
-    .then(r=>r.json()).then(d=>{toast(d.ok?`Turno "${name}" creado`:d.message,d.ok);if(d.ok)loadShiftsConfig();});
-}
-
-function logout(){
-  localStorage.removeItem('kr_token'); localStorage.removeItem('kr_user');
-  window.location.href='/login.html';
-}
-</script>
-</body>
-</html>
+    .then(r=>r.json()).then(d=>{toast(d.ok?`Turno "${name}" creado`:d.message,d.ok);

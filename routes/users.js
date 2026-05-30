@@ -383,4 +383,10 @@ async function auditLog(db, actor, action, entityType, entityId, before, after) 
   await db.query(
     `INSERT INTO audit_logs (actor_id, actor_name, actor_role, action, entity_type, entity_id, payload_before, payload_after)
      VALUES ($1,$2,$3,$4,$5,$6,$7,$8)`,
-    [actor.id, actor.full_name, actor.role, action, entityType, 
+    [actor.id, actor.full_name, actor.role, action, entityType, entityId,
+     before ? JSON.stringify(before) : null, after ? JSON.stringify(after) : null]
+  ).catch(() => {});
+}
+
+module.exports = router;
+ 

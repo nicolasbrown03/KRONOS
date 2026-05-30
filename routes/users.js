@@ -389,4 +389,3 @@ async function auditLog(db, actor, action, entityType, entityId, before, after) 
 }
 
 module.exports = router;
- 

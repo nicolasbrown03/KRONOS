@@ -647,4 +647,13 @@ function openAddShift(){
   const end=prompt('Hora fin (HH:MM):','17:00');
   const tol=prompt('Tolerancia entrada (minutos):','5');
   api('/api/shifts',{method:'POST',body:JSON.stringify({name,start_time:start,end_time:end,tolerance_in_min:parseInt(tol)||5})})
-    .then(r=>r.json()).then(d=>{toast(d.ok?`Turno "${name}" creado`:d.message,d.ok);
+    .then(r=>r.json()).then(d=>{toast(d.ok?`Turno "${name}" creado`:d.message,d.ok);if(d.ok)loadShiftsConfig();});
+}
+
+function logout(){
+  localStorage.removeItem('kr_token'); localStorage.removeItem('kr_user');
+  window.location.href='/login.html';
+}
+</script>
+</body>
+</html>

@@ -9,15 +9,15 @@ const bcrypt      = require('bcryptjs');
 const app  = express();
 const PORT = process.env.PORT || 3000;
 
-// âââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
+// ─────────────────────────────────────────────────────────────
 // Middlewares globales
-// âââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
+// ─────────────────────────────────────────────────────────────
 app.use(cors());
 app.use(express.json({ limit: '2mb' }));
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Rate limiting â protecciÃ³n bÃ¡sica (sin Redis en free tier)
+// Rate limiting — protección básica (sin Redis en free tier)
 app.use('/api/auth/login', rateLimit({
   windowMs: 15 * 60 * 1000, max: 20,
   message: { ok: false, message: 'Demasiados intentos. Espera 15 minutos.' }
@@ -27,18 +27,18 @@ app.use('/api/attendance/mark', rateLimit({
   message: { ok: false, message: 'Demasiadas marcaciones. Espera un momento.' }
 }));
 
-// âââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
+// ─────────────────────────────────────────────────────────────
 // Rutas API
-// âââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
+// ─────────────────────────────────────────────────────────────
 app.use('/api/auth',        require('./routes/auth'));
 app.use('/api/attendance',  require('./routes/attendance'));
 app.use('/api/users',       require('./routes/users'));
 app.use('/api/corrections', require('./routes/corrections'));
 app.use('/api/reports',     require('./routes/reports'));
 
-// âââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
-// Rutas de Ã¡reas, sedes y turnos (CRUD bÃ¡sico)
-// âââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
+// ─────────────────────────────────────────────────────────────
+// Rutas de áreas, sedes y turnos (CRUD básico)
+// ─────────────────────────────────────────────────────────────
 const { requireAuth, requireRole } = require('./middleware/auth');
 
 app.get('/api/areas', requireAuth, async (req, res) => {
@@ -99,9 +99,9 @@ app.post('/api/shifts', requireAuth, requireRole('super_admin','admin'), async (
   res.json({ ok: true, shift: rows[0] });
 });
 
-// âââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
+// ─────────────────────────────────────────────────────────────
 // Audit log
-// âââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
+// ─────────────────────────────────────────────────────────────
 app.get('/api/audit', requireAuth, requireRole('super_admin','admin'), async (req, res) => {
   const { entity_type, actor_id, start, end, page = 1 } = req.query;
   const limit = 100;
@@ -124,9 +124,9 @@ app.get('/api/audit', requireAuth, requireRole('super_admin','admin'), async (re
   res.json({ ok: true, logs: rows });
 });
 
-// âââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
+// ─────────────────────────────────────────────────────────────
 // Health check
-// âââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
+// ─────────────────────────────────────────────────────────────
 app.get('/api/health', async (req, res) => {
   try {
     await db.query('SELECT 1');
@@ -136,9 +136,9 @@ app.get('/api/health', async (req, res) => {
   }
 });
 
-// âââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
-// SPA fallback â todas las rutas no-API sirven el frontend
-// âââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
+// ─────────────────────────────────────────────────────────────
+// SPA fallback — todas las rutas no-API sirven el frontend
+// ─────────────────────────────────────────────────────────────
 app.get('*', (req, res) => {
   if (!req.path.startsWith('/api')) {
     res.sendFile(path.join(__dirname, 'public', 'index.html'));
@@ -147,9 +147,23 @@ app.get('*', (req, res) => {
   }
 });
 
-// âââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
-// InicializaciÃ³n: crear admin inicial si no existe
-// âââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
+// ─────────────────────────────────────────────────────────────
+// Inicialización: crear admin inicial si no existe
+// ─────────────────────────────────────────────────────────────
+
+// Auto-init schema if tables do not exist
+async function initSchema() {
+  try {
+    const r = await db.query("SELECT to_regclass('public.users') AS t");
+    if (r.rows[0].t) { console.log('   DB: tables OK'); return; }
+    console.log('   DB: running schema...');
+    const fs = require('fs');
+    const sql = fs.readFileSync(require('path').join(__dirname,'db','schema.sql'),'utf8');
+    await db.query(sql);
+    console.log('   DB: schema done');
+  } catch(e) { console.error('   DB schema error:', e.message); }
+}
+
 async function initAdmin() {
   try {
     const email = process.env.ADMIN_INITIAL_EMAIL || 'admin@somosinternet.co';
@@ -165,22 +179,22 @@ async function initAdmin() {
        ON CONFLICT DO NOTHING`,
       [email, hash]
     );
-    console.log(`â Admin inicial creado. Email: ${email} | ContraseÃ±a: ${pass}`);
-    console.log(`   â ï¸  Cambia la contraseÃ±a despuÃ©s del primer login.`);
+    console.log(`✅ Admin inicial creado. Email: ${email} | Contraseña: ${pass}`);
+    console.log(`   ⚠️  Cambia la contraseña después del primer login.`);
   } catch (err) {
     console.warn('initAdmin warning:', err.message);
   }
 }
 
-// âââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
+// ─────────────────────────────────────────────────────────────
 // Iniciar servidor
-// âââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
+// ─────────────────────────────────────────────────────────────
 app.listen(PORT, async () => {
-  console.log(`\nâ¡ KRONOS 3.0 corriendo en puerto ${PORT}`);
+  console.log(`\n⚡ KRONOS 3.0 corriendo en puerto ${PORT}`);
   console.log(`   Entorno: ${process.env.NODE_ENV || 'development'}`);
   await initSchema();
   await initAdmin();
-  console.log(`   Listo â\n`);
+  console.log(`   Listo ✅\n`);
 });
 
 module.exports = app;

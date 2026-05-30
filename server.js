@@ -148,53 +148,44 @@ app.get('*', (req, res) => {
 });
 
 // ─────────────────────────────────────────────────────────────
-// Inicialización: crear admin inicial si no existe
+// Inicialización: ejecutar schema SQL si las tablas no existen
 // ─────────────────────────────────────────────────────────────
-
-// Auto-init schema if tables do not exist
 async function initSchema() {
   try {
-    const r = await db.query("SELECT to_regclass('public.users') AS t");
-    if (r.rows[0].t) { console.log('   DB: tables OK'); return; }
-    console.log('   DB: running schema...');
-    const fs = require('fs');
-    const sql = fs.readFileSync(require('path').join(__dirname,'db','schema.sql'),'utf8');
-    await db.query(sql);
-    console.log('   DB: schema done');
-  } catch(e) { console.error('   DB schema error:', e.message); }
-}
-
-async function initAdmin() {
-  try {
-    const email = process.env.ADMIN_INITIAL_EMAIL || 'admin@somosinternet.co';
-    const pass  = process.env.ADMIN_INITIAL_PASSWORD || 'Kronos2026!';
-
-    const { rows } = await db.query("SELECT id FROM users WHERE role='super_admin' LIMIT 1");
-    if (rows.length > 0) return;
-
-    const hash = await bcrypt.hash(pass, 12);
-    await db.query(
-      `INSERT INTO users (employee_id, full_name, email, password_hash, role, status)
-       VALUES ('ADMIN001', 'Administrador KRONOS', $1, $2, 'super_admin', 'active')
-       ON CONFLICT DO NOTHING`,
-      [email, hash]
+    const { rows } = await db.query(
+      `SELECT to_regclass('public.users') AS tbl`
     );
-    console.log(`✅ Admin inicial creado. Email: ${email} | Contraseña: ${pass}`);
-    console.log(`   ⚠️  Cambia la contraseña después del primer login.`);
+    if (rows[0].tbl) {
+      console.log('   DB: tablas ya existen ✅');
+      // Migración: agregar turn_number si no existe (para bases de datos anteriores)
+      await db.query(`
+        ALTER TABLE attendance_sessions
+          ADD COLUMN IF NOT EXISTS turn_number INTEGER DEFAULT 1
+      `).catch(() => {});
+      // Actualizar el constraint único si todavía usa el esquema viejo
+      await db.query(`
+        DO $$ BEGIN
+          IF EXISTS (
+            SELECT 1 FROM pg_constraint
+            WHERE conname = 'attendance_sessions_user_id_session_date_key'
+          ) THEN
+            ALTER TABLE attendance_sessions DROP CONSTRAINT attendance_sessions_user_id_session_date_key;
+            ALTER TABLE attendance_sessions ADD CONSTRAINT attendance_sessions_user_date_turn_key
+              UNIQUE (user_id, session_date, turn_number);
+          END IF;
+        END $$
+      `).catch(() => {});
+      return;
+    }
+    console.log('   DB: ejecutando schema inicial...');
+    const fs   = require('fs');
+    const path = require('path');
+    const sql  = fs.readFileSync(path.join(__dirname, 'db', 'schema.sql'), 'utf8');
+    await db.query(sql);
+    console.log('   DB: schema creado ✅');
   } catch (err) {
-    console.warn('initAdmin warning:', err.message);
+    console.error('   DB schema error:', err.message);
   }
 }
 
-// ─────────────────────────────────────────────────────────────
-// Iniciar servidor
-// ─────────────────────────────────────────────────────────────
-app.listen(PORT, async () => {
-  console.log(`\n⚡ KRONOS 3.0 corriendo en puerto ${PORT}`);
-  console.log(`   Entorno: ${process.env.NODE_ENV || 'development'}`);
-  await initSchema();
-  await initAdmin();
-  console.log(`   Listo ✅\n`);
-});
-
-module.exports = app;
+// ─────────────────────

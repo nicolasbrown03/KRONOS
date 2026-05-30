@@ -214,17 +214,17 @@ router.post('/import/buk', requireAuth, requireRole('super_admin','admin'),
     const COL_MAP = {
       employee_id: ['cédula','cedula','rut','id colaborador','id empleado','numero documento',
                     'no. documento','documento','código colaborador'],
-      full_name:   ['nombre completo','nombre y apellido','nombres y apellidos'],
+      full_name:   ['nombre completo','nombre y apellido','nombres y apellidos','empleado','colaborador','nombre colaborador','trabajador'],
       first_name:  ['nombres','nombre'],
       last_name:   ['apellidos','apellido'],
-      cargo:       ['cargo','puesto','posición','posicion'],
-      area:        ['área','area','departamento','gerencia','ecosistema'],
+      cargo:       ['cargo','puesto','posición','posicion','rol'],
+      area:        ['área','area','departamento','gerencia','ecosistema','nombre ecosistema'],
       email:       ['email','correo','correo electronico','correo electrónico'],
-      leader:      ['supervisor','lider','líder','jefe directo','responsable'],
+      leader:      ['supervisor','lider','líder','jefe directo','responsable','líder de ecosistema','lider de ecosistema'],
       cost_center: ['centro de costo','cc','centrocosto'],
       start_date:  ['fecha inicio','fecha ingreso','fecha de ingreso'],
       buk_id:      ['id buk','código buk','codigo buk','id interno'],
-      sede:        ['sede','ubicación','ubicacion','ciudad'],
+      sede:        ['sede','ubicación','ubicacion','ciudad','municipio'],
     };
 
     function findCol(row, keys) {
@@ -383,9 +383,4 @@ async function auditLog(db, actor, action, entityType, entityId, before, after) 
   await db.query(
     `INSERT INTO audit_logs (actor_id, actor_name, actor_role, action, entity_type, entity_id, payload_before, payload_after)
      VALUES ($1,$2,$3,$4,$5,$6,$7,$8)`,
-    [actor.id, actor.full_name, actor.role, action, entityType, entityId,
-     before ? JSON.stringify(before) : null, after ? JSON.stringify(after) : null]
-  ).catch(() => {});
-}
-
-module.exports = router;
+    [actor.id, actor.full_name, actor.role, action, entityType, 

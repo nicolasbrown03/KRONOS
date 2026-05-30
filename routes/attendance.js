@@ -6,6 +6,18 @@ const { calculateLateMinutes } = require('../utils/colombiaHolidays');
 const router = express.Router();
 
 // ─────────────────────────────────────────────────────────────
+// Ecosistemas con múltiples turnos por día
+// SAC: hasta 2 ingresos, mínimo 1 hora entre turnos
+// ─────────────────────────────────────────────────────────────
+const MULTI_TURN_CONFIG = {
+  'sac':         { maxTurns: 2, minHoursBetween: 1 },
+  'noc':         { maxTurns: 2, minHoursBetween: 1 },
+};
+function getMultiTurnConfig(areaName) {
+  return MULTI_TURN_CONFIG[(areaName || '').toLowerCase().trim()] || null;
+}
+
+// ─────────────────────────────────────────────────────────────
 // Anti-duplicado en memoria (reemplaza Redis en free tier)
 // Formato: Map<userId_type, timestamp>
 // ─────────────────────────────────────────────────────────────
@@ -138,18 +150,51 @@ router.post('/mark', requireAuth, async (req, res) => {
     // ── Validar secuencia lógica ──
     const today = new Date().toISOString().substring(0, 10);
     const { rows: sessionRows } = await db.query(
-      `SELECT * FROM attendance_sessions WHERE user_id=$1 AND session_date=$2`,
+      `SELECT s.*, e.marked_at AS entry_time, x.marked_at AS exit_time
+       FROM attendance_sessions s
+       LEFT JOIN attendances e ON e.id = s.entry_id
+       LEFT JOIN attendances x ON x.id = s.exit_id
+       WHERE s.user_id=$1 AND s.session_date=$2
+       ORDER BY s.turn_number`,
       [userId, today]
     );
-    const session = sessionRows[0];
 
-    if (type === 'exit' && !session?.entry_id) {
+    const multiCfg = getMultiTurnConfig(user.area_name);
+    const openSession = sessionRows.find(s => s.entry_id && !s.exit_id);
+    const lastClosedSession = sessionRows.filter(s => s.entry_id && s.exit_id).pop();
+    const nextTurn = (sessionRows.length > 0 ? Math.max(...sessionRows.map(s => s.turn_number)) : 0) + 1;
+
+    if (type === 'exit' && !openSession) {
       recentMarks.delete(`${userId}_${type}`);
       return res.status(400).json({ ok: false, message: '⚠️ No puedes registrar salida sin haber marcado entrada hoy.' });
     }
-    if (type === 'entry' && session?.entry_id && !session?.exit_id) {
-      recentMarks.delete(`${userId}_${type}`);
-      return res.status(400).json({ ok: false, message: '⚠️ Ya tienes una entrada sin salida. Marca salida primero.' });
+
+    if (type === 'entry') {
+      if (openSession) {
+        recentMarks.delete(`${userId}_${type}`);
+        return res.status(400).json({ ok: false, message: '⚠️ Ya tienes una entrada sin salida. Marca salida primero.' });
+      }
+
+      // Segundo turno: verificar si el ecosistema lo permite
+      if (lastClosedSession) {
+        if (!multiCfg) {
+          recentMarks.delete(`${userId}_${type}`);
+          return res.status(400).json({ ok: false, message: '⚠️ La jornada de hoy ya está cerrada. No puedes volver a marcar entrada.' });
+        }
+        if (nextTurn > multiCfg.maxTurns) {
+          recentMarks.delete(`${userId}_${type}`);
+          return res.status(400).json({ ok: false, message: `⚠️ Has alcanzado el máximo de ${multiCfg.maxTurns} turnos para hoy.` });
+        }
+        // Verificar tiempo mínimo entre turnos
+        if (lastClosedSession.exit_time) {
+          const horasSalida = (Date.now() - new Date(lastClosedSession.exit_time).getTime()) / 3600000;
+          if (horasSalida < multiCfg.minHoursBetween) {
+            const minutosRestantes = Math.ceil((multiCfg.minHoursBetween - horasSalida) * 60);
+            recentMarks.delete(`${userId}_${type}`);
+            return res.status(400).json({ ok: false, message: `⚠️ Intervalo entre turnos insuficiente. Espera ${minutosRestantes} minutos más.` });
+          }
+        }
+      }
     }
 
     // ── Insertar marcación ──
@@ -177,7 +222,7 @@ router.post('/mark', requireAuth, async (req, res) => {
 
     // ── Actualizar o crear sesión del día ──
     const sessionDate = att.marked_at.toISOString().substring(0, 10);
-    await updateSession(userId, sessionDate, att.id, type, user);
+    await updateSession(userId, sessionDate, att.id, type, user, nextTurn);
 
     // ── Calcular tardanza si es entrada ──
     let lateMsg = '';
@@ -231,82 +276,24 @@ router.post('/mark', requireAuth, async (req, res) => {
 });
 
 // ─────────────────────────────────────────────────────────────
-// Actualizar attendance_session
+// Actualizar attendance_session (soporta múltiples turnos)
 // ─────────────────────────────────────────────────────────────
-async function updateSession(userId, sessionDate, attId, type, user) {
+async function updateSession(userId, sessionDate, attId, type, user, nextTurn = 1) {
   const colMap = {
     entry: 'entry_id', exit: 'exit_id',
     lunch_out: 'lunch_out_id', lunch_in: 'lunch_in_id'
   };
   const col = colMap[type];
 
-  const exists = await db.query(
-    'SELECT id FROM attendance_sessions WHERE user_id=$1 AND session_date=$2',
+  // Buscar la sesión abierta del turno actual (sin exit)
+  const openQ = await db.query(
+    `SELECT id, turn_number FROM attendance_sessions
+     WHERE user_id=$1 AND session_date=$2 AND exit_id IS NULL
+     ORDER BY turn_number DESC LIMIT 1`,
     [userId, sessionDate]
   );
+  const openSess = openQ.rows[0];
 
-  if (exists.rows.length === 0) {
-    await db.query(
-      `INSERT INTO attendance_sessions (user_id, session_date, shift_id, ${col || 'entry_id'}, status)
-       VALUES ($1,$2,$3,$4,'open')`,
-      [userId, sessionDate, user.sh_id || null, attId]
-    );
-  } else if (col) {
-    let status = 'open';
-    if (type === 'exit') status = 'closed';
-
-    await db.query(
-      `UPDATE attendance_sessions SET ${col}=$1, status=$2, updated_at=NOW()
-       WHERE user_id=$3 AND session_date=$4`,
-      [attId, status, userId, sessionDate]
-    );
-  }
-}
-
-// ─────────────────────────────────────────────────────────────
-// GET /api/attendance/today — estado del día del usuario actual
-// ─────────────────────────────────────────────────────────────
-router.get('/today', requireAuth, async (req, res) => {
-  try {
-    const today = new Date().toISOString().substring(0, 10);
-    const { rows } = await db.query(
-      `SELECT s.*,
-              e.marked_at  AS entry_time,  e.anomaly_flags AS entry_flags,
-              x.marked_at  AS exit_time,
-              lo.marked_at AS lunch_out_time,
-              li.marked_at AS lunch_in_time
-       FROM attendance_sessions s
-       LEFT JOIN attendances e  ON e.id = s.entry_id
-       LEFT JOIN attendances x  ON x.id = s.exit_id
-       LEFT JOIN attendances lo ON lo.id = s.lunch_out_id
-       LEFT JOIN attendances li ON li.id = s.lunch_in_id
-       WHERE s.user_id=$1 AND s.session_date=$2`,
-      [req.user.id, today]
-    );
-    res.json({ ok: true, session: rows[0] || null, date: today });
-  } catch (err) {
-    res.status(500).json({ ok: false, message: 'Error interno.' });
-  }
-});
-
-// GET /api/attendance/history?days=30
-router.get('/history', requireAuth, async (req, res) => {
-  try {
-    const days = Math.min(parseInt(req.query.days || 30), 90);
-    const { rows } = await db.query(
-      `SELECT s.session_date, s.status, s.total_hours, s.overtime_hours, s.late_minutes,
-              e.marked_at AS entry_time, x.marked_at AS exit_time
-       FROM attendance_sessions s
-       LEFT JOIN attendances e ON e.id = s.entry_id
-       LEFT JOIN attendances x ON x.id = s.exit_id
-       WHERE s.user_id=$1 AND s.session_date >= NOW() - INTERVAL '${days} days'
-       ORDER BY s.session_date DESC`,
-      [req.user.id]
-    );
-    res.json({ ok: true, records: rows });
-  } catch (err) {
-    res.status(500).json({ ok: false, message: 'Error interno.' });
-  }
-});
-
-module.exports = router;
+  if (type === 'entry') {
+    // Crear nueva sesión para este turno
+    const turn = openSe

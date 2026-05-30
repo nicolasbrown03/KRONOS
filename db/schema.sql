@@ -276,4 +276,6 @@ INSERT INTO shifts (name, start_time, end_time, crosses_midnight, tolerance_in_m
   ('Turno Mañana',   '06:00', '14:00', false, 5, 8.0),
   ('Turno Tarde',    '14:00', '22:00', false, 5, 8.0),
   ('Turno Noche',    '22:00', '06:00', true,  5, 8.0),
-  ('Jornada Diurna', '08:
+  ('Jornada Diurna', '08:00', '17:00', false, 5, 8.0),
+  ('Jornada Flexible','07:00','17:00', false, 15, 8.0)
+ON CONFLICT DO NOTHING;

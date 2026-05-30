@@ -188,4 +188,67 @@ async function initSchema() {
   }
 }
 
-// ─────────────────────
+// ─────────────────────────────────────────────────────────────
+// Inicialización: crear admin inicial si no existe
+// ─────────────────────────────────────────────────────────────
+async function initAdmin() {
+  try {
+    const email = process.env.ADMIN_INITIAL_EMAIL || 'admin@somosinternet.co';
+    const pass  = process.env.ADMIN_INITIAL_PASSWORD || 'Kronos2026!';
+
+    const { rows } = await db.query("SELECT id FROM users WHERE role='super_admin' LIMIT 1");
+    if (rows.length > 0) return;
+
+    const hash = await bcrypt.hash(pass, 12);
+    await db.query(
+      `INSERT INTO users (employee_id, full_name, email, password_hash, role, status)
+       VALUES ('ADMIN001', 'Administrador KRONOS', $1, $2, 'super_admin', 'active')
+       ON CONFLICT DO NOTHING`,
+      [email, hash]
+    );
+    console.log(`✅ Admin inicial creado. Email: ${email} | Contraseña: ${pass}`);
+    console.log(`   ⚠️  Cambia la contraseña después del primer login.`);
+  } catch (err) {
+    console.warn('initAdmin warning:', err.message);
+  }
+}
+
+// ─────────────────────────────────────────────────────────────
+// Iniciar servidor
+// ─────────────────────────────────────────────────────────────
+app.listen(PORT, async () => {
+  console.log(`\n⚡ KRONOS 3.0 corriendo en puerto ${PORT}`);
+  console.log(`   Entorno: ${process.env.NODE_ENV || 'development'}`);
+  await initSchema();
+  await initAdmin();
+  startKeepAlive();
+  console.log(`   Listo ✅\n`);
+});
+
+// ─────────────────────────────────────────────────────────────
+// KEEP-ALIVE — evita que Render free tier duerma el servidor
+// Se auto-pinga cada 14 minutos (Render duerme a los 15 min)
+// Render inyecta RENDER_EXTERNAL_URL automáticamente en producción
+// ─────────────────────────────────────────────────────────────
+function startKeepAlive() {
+  const appUrl = process.env.RENDER_EXTERNAL_URL;
+  if (!appUrl) {
+    console.log('   Keep-alive: desactivado (solo activo en Render)');
+    return;
+  }
+
+  const https = require('https');
+  const INTERVAL_MS = 14 * 60 * 1000; // 14 minutos
+
+  setInterval(() => {
+    https.get(`${appUrl}/api/health`, (res) => {
+      console.log(`[keep-alive] ping OK → ${res.statusCode}`);
+    }).on('error', (err) => {
+      console.warn('[keep-alive] ping falló:', err.message);
+    });
+  }, INTERVAL_MS);
+
+  console.log(`   Keep-alive: activo (ping cada 14 min → ${appUrl}/api/health)`);
+}
+
+module.exports = app;

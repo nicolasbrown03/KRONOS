@@ -279,3 +279,27 @@ INSERT INTO shifts (name, start_time, end_time, crosses_midnight, tolerance_in_m
   ('Jornada Diurna', '08:00', '17:00', false, 5, 8.0),
   ('Jornada Flexible','07:00','17:00', false, 15, 8.0)
 ON CONFLICT DO NOTHING;
+
+-- ============================================================
+-- CONFIGURACION POR AREA (multi-turno, geocerca, exclusiones)
+-- ============================================================
+CREATE TABLE IF NOT EXISTS area_settings (
+  area_id                UUID PRIMARY KEY REFERENCES areas(id),
+  max_turns              INTEGER DEFAULT 1,
+  min_hours_between      DECIMAL(4,2) DEFAULT 1.0,
+  geo_required_override  BOOLEAN DEFAULT false,
+  exclude_from_attendance BOOLEAN DEFAULT false,
+  updated_at             TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- ============================================================
+-- CARGOS EXCLUIDOS DE MARCACION
+-- ============================================================
+CREATE TABLE IF NOT EXISTS excluded_roles (
+  cargo      VARCHAR(80) PRIMARY KEY,
+  reason     TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Campo requires_attendance en users
+ALTER TABLE users ADD COLUMN IF NOT EXISTS requires_attendance BOOLEAN DEFAULT true;

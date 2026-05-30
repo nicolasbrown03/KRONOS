@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>KRONOS 3.0 — Ingresar</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{min-height:100vh;display:flex;align-items:center;justify-content:center;
+  background:#0a0e18;font-family:'Segoe UI',Arial,sans-serif;padding:16px}
+.card{background:#fff;border-radius:20px;padding:32px 28px;width:100%;max-width:400px;
+  box-shadow:0 24px 60px rgba(0,0,0,.4)}
+.logo{text-align:center;margin-bottom:24px}
+.logo h1{font-size:28px;font-weight:800;color:#0a0e18;letter-spacing:-.5px}
+.logo span{color:#3b82f6}
+.logo p{font-size:13px;color:#64748b;margin-top:4px}
+.field{margin-bottom:16px}
+.field label{display:block;font-size:13px;font-weight:700;color:#0f172a;margin-bottom:6px}
+.field input{width:100%;padding:12px 14px;border:1.5px solid #e2e8f0;border-radius:10px;
+  font-size:15px;outline:none;transition:border .15s}
+.field input:focus{border-color:#3b82f6;box-shadow:0 0 0 3px rgba(59,130,246,.12)}
+.btn{width:100%;padding:13px;background:#3b82f6;color:#fff;border:none;border-radius:10px;
+  font-size:15px;font-weight:700;cursor:pointer;margin-top:8px;transition:background .15s}
+.btn:hover{background:#2563eb}
+.btn:disabled{opacity:.6;cursor:not-allowed}
+.alert{padding:10px 14px;border-radius:8px;font-size:13px;font-weight:600;margin-bottom:14px;display:none}
+.alert.error{background:#fff1f2;border:1px solid #fecdd3;color:#9f1239}
+.footer{text-align:center;margin-top:20px;font-size:12px;color:#94a3b8}
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="logo">
+    <h1>⚡ KRONOS <span>3.0</span></h1>
+    <p>Sistema de control de asistencia</p>
+  </div>
+  <div class="alert error" id="alertEl"></div>
+  <div class="field">
+    <label>ID de Empleado (cédula)</label>
+    <input id="empId" type="text" placeholder="Ej: 1234567890" inputmode="numeric" autocomplete="username">
+  </div>
+  <div class="field">
+    <label>Contraseña</label>
+    <input id="pass" type="password" placeholder="Ingresa tu contraseña" autocomplete="current-password">
+  </div>
+  <button class="btn" id="btnLogin" onclick="doLogin()">Ingresar</button>
+  <div class="footer">SOMOS Internet · Uso interno</div>
+</div>
+<script>
+const API = '';
+document.getElementById('pass').addEventListener('keydown', e => { if(e.key==='Enter') doLogin(); });
+document.getElementById('empId').addEventListener('keydown', e => { if(e.key==='Enter') document.getElementById('pass').focus(); });
+
+function showError(msg) {
+  const el = document.getElementById('alertEl');
+  el.textContent = msg; el.style.display = 'block';
+}
+
+async function doLogin() {
+  const empId = document.getElementById('empId').value.trim();
+  const pass  = document.getElementById('pass').value;
+  const btn   = document.getElementById('btnLogin');
+  document.getElementById('alertEl').style.display = 'none';
+
+  if (!empId || !pass) { showError('Ingresa tu ID y contraseña.'); return; }
+
+  btn.disabled = true; btn.textContent = 'Ingresando...';
+  try {
+    const res = await fetch(`${API}/api/auth/login`, {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ employee_id: empId, password: pass })
+    });
+    const data = await res.json();
+    if (data.ok) {
+      localStorage.setItem('kr_token', data.token);
+      localStorage.setItem('kr_user', JSON.stringify(data.user));
+      const role = data.user.role;
+      if (['super_admin','admin','leader'].includes(role)) {
+        window.location.href = '/admin.html';
+      } else {
+        window.location.href = '/mark.html';
+      }
+    } else {
+      showError(data.message || 'Error al ingresar.');
+    }
+  } catch(e) {
+    showError('Error de conexión. Verifica tu internet.');
+  }
+  btn.disabled = false; btn.textContent = 'Ingresar';
+}
+
+// Si ya está logueado, redirigir
+const tok = localStorage.getItem('kr_token');
+if (tok) {
+  const u = JSON.parse(localStorage.getItem('kr_user')||'{}');
+  if (['super_admin','admin','leader'].includes(u.role)) window.location.href = '/admin.html';
+  else window.location.href = '/mark.html';
+}
+</script>
+</body>
+</html>

@@ -95,6 +95,7 @@ tr:hover td{background:#f8fafc}
   <button class="tab" onclick="showTab('import')">📥 Importar BUK</button>
   <button class="tab" onclick="showTab('reports')">📈 Reportes</button>
   <button class="tab" onclick="showTab('corrections')">✍ Novedades</button>
+  <button class="tab" onclick="showTab('alerts')">🔔 Alertas</button>
   <button class="tab" onclick="showTab('config')">⚙ Configuración</button>
 </div>
 
@@ -252,9 +253,38 @@ tr:hover td{background:#f8fafc}
   </div>
 </div>
 
-<!-- ═══════════ CONFIGURACIÓN ═══════════ -->
+
+<!-- ALERTAS -->
+<div class="panel" id="tab-alerts">
+  <div class="sec-title">Alertas de jornada abierta</div>
+  <div class="sec-sub">Detecta colaboradores que llevan mas horas de las normales sin cerrar su jornada.</div>
+  <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px;align-items:flex-end">
+    <div class="field">
+      <label>Umbral de horas</label>
+      <input type="number" id="alert-hours" value="10" min="1" max="24" style="width:100px">
+    </div>
+    <div class="field" style="flex:1;min-width:140px">
+      <label>Area</label>
+      <select id="alert-area"><option value="">Todas</option></select>
+    </div>
+    <button class="btn btn-primary" onclick="loadAlerts()">🔍 Consultar</button>
+    <button class="btn btn-danger" onclick="sendAlertEmails()" id="btnSendAlerts" style="display:none">📧 Enviar alertas por email</button>
+  </div>
+  <div id="alertSummary" style="margin-bottom:12px;font-size:13px;color:#64748b"></div>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Colaborador</th><th>Area</th><th>Cargo</th><th>Lider</th><th>Entrada</th><th>Horas activo</th></tr></thead>
+      <tbody id="alertsBody"><tr><td colspan="6" style="text-align:center;padding:20px;color:#94a3b8">Selecciona un umbral y consulta</td></tr></tbody>
+    </table>
+  </div>
+  <div style="margin-top:16px;padding:12px;background:#fff7ed;border:1px solid #fed7aa;border-radius:10px;font-size:13px;color:#9a3412">
+    <strong>Configurar alertas automaticas por email:</strong> Agrega la variable <code>SENDGRID_API_KEY</code> en las variables de entorno de Render y la variable <code>ALERT_FROM_EMAIL</code> con el email remitente. Las alertas se enviaran automaticamente a cada lider.
+  </div>
+</div>
+
+<!-- CONFIG AVANZADA -->
 <div class="panel" id="tab-config">
-  <div class="sec-title">Configuración del sistema</div>
+  <div class="sec-title">Configuracion del sistema</div>
   <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px">
 
     <!-- Sedes -->
@@ -270,6 +300,55 @@ tr:hover td{background:#f8fafc}
       <div id="shiftsList" style="font-size:13px;color:#64748b;margin-bottom:12px">Cargando...</div>
       <button class="btn btn-primary btn-sm" onclick="openAddShift()">+ Nuevo turno</button>
     </div>
+
+    <!-- Configuracion por Area -->
+    <div style="background:#fff;border-radius:14px;padding:20px;border:1px solid #e2e8f0">
+      <h3 style="font-size:14px;font-weight:800;margin-bottom:12px">⚙ Config por area</h3>
+      <div class="field">
+        <label>Area a configurar</label>
+        <select id="cfgAreaSel"><option value="">Selecciona...</option></select>
+      </div>
+      <div class="field">
+        <label>Max turnos por dia</label>
+        <input type="number" id="cfgMaxTurns" value="1" min="1" max="5">
+      </div>
+      <div class="field">
+        <label>Horas minimas entre turnos</label>
+        <input type="number" id="cfgMinHours" value="1" min="0" step="0.5">
+      </div>
+      <label style="display:flex;gap:8px;align-items:center;margin-top:10px;font-size:13px">
+        <input type="checkbox" id="cfgGeoReq"> Geocerca obligatoria
+      </label>
+      <button class="btn btn-success btn-sm" style="margin-top:12px" onclick="saveAreaConfig()">Guardar config</button>
+    </div>
+
+    <!-- Cargos excluidos -->
+    <div style="background:#fff;border-radius:14px;padding:20px;border:1px solid #e2e8f0">
+      <h3 style="font-size:14px;font-weight:800;margin-bottom:12px">🚫 Cargos sin marcacion</h3>
+      <p style="font-size:12px;color:#64748b;margin-bottom:10px">Los colaboradores con estos cargos no apareceran en reportes de asistencia ni alertas.</p>
+      <div id="excludedRoles" style="font-size:13px;margin-bottom:10px">Cargando...</div>
+      <div style="display:flex;gap:8px">
+        <input type="text" id="newExcludedRole" placeholder="Cargo a excluir" style="flex:1;padding:8px;border:1px solid #e2e8f0;border-radius:8px;font-size:13px">
+        <button class="btn btn-danger btn-sm" onclick="addExcludedRole()">+ Excluir</button>
+      </div>
+    </div>
+
+    <!-- Ley 2101 -->
+    <div style="background:#eff6ff;border-radius:14px;padding:20px;border:1px solid #bfdbfe">
+      <h3 style="font-size:14px;font-weight:800;margin-bottom:8px;color:#1d4ed8">🇨🇴 Ley 2101/2021</h3>
+      <div style="font-size:12px;color:#1e40af;line-height:1.6">
+        <strong>Jornada maxima ordinaria:</strong><br>
+        Hoy (hasta 14/07/2026): <strong>44 h/semana</strong><br>
+        Desde 15/07/2026: <strong>42 h/semana</strong><br><br>
+        <strong>Recargos:</strong><br>
+        Nocturno (9pm-6am): +35% | Dominical: +75%<br>
+        Festivo: +75% | HED: +25% | HEN: +75%<br>
+        HEDF: +100% | HENDF: +150%
+      </div>
+    </div>
+  </div>
+</div>
+
 
     <!-- Jornada máxima Colombia -->
     <div style="background:#eff6ff;border-radius:14px;padding:20px;border:1px solid #bfdbfe">
@@ -313,6 +392,13 @@ loadImportHistory();
 loadCorrections('pending');
 loadSedesConfig();
 loadShiftsConfig();
+loadAreaConfig();
+loadExcludedRoles();
+// Poblar select de alertas
+api('/api/areas').then(r=>r.json()).then(d=>{
+  const sel=document.getElementById('alert-area');
+  if(sel)(d.areas||[]).forEach(a=>{const o=document.createElement('option');o.value=a.name;o.textContent=a.name;sel.appendChild(o);});
+});
 
 // ─────────────────────── HELPERS ───────────────────────
 function h(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
@@ -648,6 +734,121 @@ function openAddShift(){
   const tol=prompt('Tolerancia entrada (minutos):','5');
   api('/api/shifts',{method:'POST',body:JSON.stringify({name,start_time:start,end_time:end,tolerance_in_min:parseInt(tol)||5})})
     .then(r=>r.json()).then(d=>{toast(d.ok?`Turno "${name}" creado`:d.message,d.ok);if(d.ok)loadShiftsConfig();});
+}
+
+
+// ─────────────────────── ALERTAS ───────────────────────
+async function loadAlerts() {
+  const hours = document.getElementById('alert-hours').value || 10;
+  const area  = document.getElementById('alert-area').value;
+  const tbody = document.getElementById('alertsBody');
+  const summary = document.getElementById('alertSummary');
+  tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:16px;color:#94a3b8">Consultando...</td></tr>';
+
+  const res = await api(`/api/alerts/open-sessions?hours=${hours}&area=${encodeURIComponent(area)}`);
+  const d = await res.json();
+  if (!d.ok) { toast(d.message, false); return; }
+
+  const btn = document.getElementById('btnSendAlerts');
+  btn.style.display = d.total > 0 ? 'block' : 'none';
+
+  summary.textContent = d.total > 0
+    ? `⚠️ ${d.total} colaborador(es) llevan mas de ${hours}h con jornada abierta.`
+    : `✅ Ningún colaborador supera las ${hours}h activo.`;
+
+  if (!d.records.length) {
+    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:16px;color:#10b981">Sin alertas activas</td></tr>';
+    return;
+  }
+  tbody.innerHTML = d.records.map(r => `<tr>
+    <td><strong>${h(r.full_name)}</strong><br><span style="font-size:11px;color:#94a3b8">${h(r.employee_id)}</span></td>
+    <td>${h(r.area||'--')}</td>
+    <td style="font-size:12px">${h(r.cargo||'--')}</td>
+    <td style="font-size:12px">${h(r.leader_name||'--')}</td>
+    <td style="font-size:12px">${r.entry_time ? new Date(r.entry_time).toLocaleTimeString('es-CO',{hour:'2-digit',minute:'2-digit',timeZone:'America/Bogota'}) : '--'}</td>
+    <td><span style="font-weight:700;color:${r.hours_open>12?'#ef4444':'#f59e0b'}">${r.hours_open}h</span></td>
+  </tr>`).join('');
+}
+
+async function sendAlertEmails() {
+  const hours = document.getElementById('alert-hours').value || 10;
+  const area  = document.getElementById('alert-area').value;
+  if (!confirm(`Enviar alertas por email a los lideres de equipos con jornadas > ${hours}h abiertas?`)) return;
+  const res = await api('/api/alerts/send-email', {method:'POST', body:JSON.stringify({hours:parseFloat(hours), area:area||null})});
+  const d = await res.json();
+  toast(d.message, d.ok);
+}
+
+// ─────────────────────── CONFIG AREAS ───────────────────────
+async function loadAreaConfig() {
+  const res = await api('/api/areas');
+  const d = await res.json();
+  const sel = document.getElementById('cfgAreaSel');
+  if (!sel) return;
+  sel.innerHTML = '<option value="">Selecciona...</option>';
+  (d.areas||[]).forEach(a => {
+    const opt = document.createElement('option');
+    opt.value = a.id;
+    opt.textContent = a.name;
+    opt.dataset.maxTurns = a.max_turns || 1;
+    opt.dataset.minHours = a.min_hours_between || 1;
+    opt.dataset.geoReq   = a.geo_required_override || false;
+    sel.appendChild(opt);
+  });
+  sel.onchange = function() {
+    const opt = sel.options[sel.selectedIndex];
+    document.getElementById('cfgMaxTurns').value = opt.dataset.maxTurns || 1;
+    document.getElementById('cfgMinHours').value  = opt.dataset.minHours || 1;
+    document.getElementById('cfgGeoReq').checked  = opt.dataset.geoReq === 'true';
+  };
+}
+
+async function saveAreaConfig() {
+  const areaId = document.getElementById('cfgAreaSel').value;
+  if (!areaId) { toast('Selecciona un area', false); return; }
+  const res = await api(`/api/areas/${areaId}/settings`, {method:'PUT', body:JSON.stringify({
+    max_turns: parseInt(document.getElementById('cfgMaxTurns').value) || 1,
+    min_hours_between: parseFloat(document.getElementById('cfgMinHours').value) || 1,
+    geo_required_override: document.getElementById('cfgGeoReq').checked
+  })});
+  const d = await res.json();
+  toast(d.message, d.ok);
+  if (d.ok) loadAreaConfig();
+}
+
+// ─────────────────────── CARGOS EXCLUIDOS ───────────────────────
+async function loadExcludedRoles() {
+  const res = await api('/api/areas/excluded-roles');
+  const d = await res.json();
+  const el = document.getElementById('excludedRoles');
+  if (!el) return;
+  if (!d.roles || !d.roles.length) {
+    el.innerHTML = '<span style="color:#94a3b8">Sin cargos excluidos</span>';
+    return;
+  }
+  el.innerHTML = d.roles.map(r => `
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid #f1f5f9">
+      <span style="font-size:13px">${h(r.cargo)}</span>
+      <button class="btn btn-danger btn-sm" onclick="removeExcludedRole('${encodeURIComponent(r.cargo)}')">✕</button>
+    </div>`).join('');
+}
+
+async function addExcludedRole() {
+  const cargo = document.getElementById('newExcludedRole').value.trim();
+  if (!cargo) { toast('Escribe el cargo a excluir', false); return; }
+  if (!confirm(`Excluir el cargo "${cargo}" de marcacion? Los colaboradores con este cargo no apareceran en reportes ni alertas.`)) return;
+  const res = await api('/api/areas/excluded-roles', {method:'POST', body:JSON.stringify({cargo})});
+  const d = await res.json();
+  toast(d.message, d.ok);
+  if (d.ok) { document.getElementById('newExcludedRole').value = ''; loadExcludedRoles(); }
+}
+
+async function removeExcludedRole(cargo) {
+  if (!confirm('Quitar la exclusion de este cargo?')) return;
+  const res = await api(`/api/areas/excluded-roles/${cargo}`, {method:'DELETE'});
+  const d = await res.json();
+  toast(d.message, d.ok);
+  if (d.ok) loadExcludedRoles();
 }
 
 function logout(){

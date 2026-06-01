@@ -238,8 +238,23 @@ app.listen(PORT, async () => {
   console.log(`   Listo ✅\n`);
 });
 
-// ─────────────────────────────────────────────────────────────
-// KEEP-ALIVE — evita que Render free tier duerma el servidor
-// Se auto-pinga cada 14 minutos (Render duerme a los 15 min)
-// Render inyecta RENDER_EXTERNAL_URL automáticamente en producción
-// ──────────────────�
+// Keep-alive: evita que Render free tier duerma el servidor
+function startKeepAlive() {
+  const appUrl = process.env.RENDER_EXTERNAL_URL;
+  if (!appUrl) {
+    console.log('   Keep-alive: desactivado (solo activo en Render)');
+    return;
+  }
+  const https = require('https');
+  const INTERVAL_MS = 14 * 60 * 1000;
+  setInterval(() => {
+    https.get(appUrl + '/api/health', (res) => {
+      console.log('[keep-alive] ping OK ' + res.statusCode);
+    }).on('error', (err) => {
+      console.warn('[keep-alive] ping fallo:', err.message);
+    });
+  }, INTERVAL_MS);
+  console.log('   Keep-alive: activo (ping cada 14 min -> ' + appUrl + '/api/health)');
+}
+
+module.exports = app;

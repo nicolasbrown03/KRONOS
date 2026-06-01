@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>KRONOS 3.0 — Marcación</title>
+<title>KRONOS 3.0 — Marcacion</title>
 <style>
 :root{--pri:#3b82f6;--pri-d:#1d4ed8;--ok:#10b981;--ok-d:#059669;
       --warn:#f59e0b;--err:#ef4444;--bg:#0a0e18;--card:#fff}
@@ -17,33 +17,48 @@ body{min-height:100vh;display:flex;align-items:center;justify-content:center;
 .header h2{font-size:16px;font-weight:800;color:#0a0e18}
 .time-badge{font-size:13px;font-weight:700;background:#f1f5f9;padding:5px 10px;
   border-radius:20px;color:#334155;font-variant-numeric:tabular-nums}
-.user-panel{background:#f8fafc;border-radius:14px;padding:14px 16px;margin-bottom:16px;
-  border:1px solid #e2e8f0}
-.user-name{font-size:15px;font-weight:700;color:#0f172a}
-.user-meta{font-size:12px;color:#64748b;margin-top:2px}
-.status-box{border-radius:14px;padding:13px 15px;margin-bottom:16px;display:flex;
-  align-items:flex-start;gap:10px;min-height:58px;font-size:14px;font-weight:600;
+.panel{margin-top:0;padding:16px;border-radius:14px;background:#f8fafc;
+  border:1px solid #e2e8f0;margin-bottom:14px}
+.panel-title{font-size:11px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;
+  color:#334155;margin-bottom:10px}
+.field{margin-bottom:12px}
+.field:last-child{margin-bottom:0}
+.field label{display:block;font-size:12px;font-weight:700;color:#0f172a;margin-bottom:5px}
+.field input,.field select{width:100%;padding:12px 14px;border-radius:12px;
+  border:1.5px solid #e2e8f0;background:#fff;color:#0f172a;font-size:15px;outline:none;transition:border .15s}
+.field input:focus,.field select:focus{border-color:var(--pri)}
+.btn-search{width:100%;padding:13px;border:none;border-radius:12px;font-size:14px;
+  font-weight:700;cursor:pointer;background:linear-gradient(180deg,#475569,#334155);
+  color:#fff;margin-top:8px}
+.user-panel{background:#ecfdf5;border:1px solid #bbf7d0;border-radius:12px;
+  padding:12px 14px;margin-bottom:14px;display:none}
+.user-panel.visible{display:block}
+.user-name{font-size:15px;font-weight:700;color:#065f46}
+.user-meta{font-size:12px;color:#047857;margin-top:2px}
+.status-box{border-radius:14px;padding:13px 15px;margin-bottom:14px;display:flex;
+  align-items:flex-start;gap:10px;min-height:56px;font-size:14px;font-weight:600;
   white-space:pre-wrap;line-height:1.4}
-.s-info   {background:#eef2ff;border:1px solid #c7d2fe;color:#1e293b}
-.s-ok     {background:#ecfdf5;border:1px solid #bbf7d0;color:#065f46}
-.s-warn   {background:#fff7ed;border:1px solid #fed7aa;color:#9a3412}
-.s-error  {background:#fff1f2;border:1px solid #fecdd3;color:#9f1239}
-.s-emoji  {font-size:18px;flex:0 0 22px;margin-top:1px}
+.s-info  {background:#eef2ff;border:1px solid #c7d2fe;color:#1e293b}
+.s-ok    {background:#ecfdf5;border:1px solid #bbf7d0;color:#065f46}
+.s-warn  {background:#fff7ed;border:1px solid #fed7aa;color:#9a3412}
+.s-error {background:#fff1f2;border:1px solid #fecdd3;color:#9f1239}
+.s-emoji {font-size:18px;flex:0 0 22px;margin-top:1px}
 .btns{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px}
 .btns-secondary{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}
 button{border:none;border-radius:12px;font-size:14px;font-weight:700;cursor:pointer;
   padding:13px 10px;transition:opacity .15s,transform .05s}
 button:active{transform:translateY(1px)}
-button:disabled{opacity:.5;cursor:not-allowed}
+button:disabled{opacity:.4;cursor:not-allowed}
 .btn-entry {background:linear-gradient(180deg,var(--pri),var(--pri-d));color:#fff}
 .btn-exit  {background:linear-gradient(180deg,var(--ok),var(--ok-d));color:#fff}
 .btn-lunch {background:#f1f5f9;color:#334155;border:1px solid #e2e8f0;font-size:13px}
 .btn-reset {width:100%;background:#f8fafc;color:#64748b;border:1px solid #e2e8f0;
   font-size:13px;margin-top:4px;display:none}
-.footer-note{padding:12px 14px;border-radius:12px;background:rgba(248,250,252,.9);
+.footer-note{padding:11px 13px;border-radius:12px;background:rgba(248,250,252,.9);
   border:1px dashed #cbd5e1;color:#64748b;font-size:12px;line-height:1.5}
-.logout{font-size:12px;color:#94a3b8;text-align:center;margin-top:12px;cursor:pointer}
-.logout:hover{color:#64748b}
+.admin-link{font-size:12px;color:#94a3b8;text-align:center;margin-top:12px;cursor:pointer}
+.admin-link a{color:#3b82f6;text-decoration:none}
+.select-loading{color:#94a3b8}
 @media(max-width:420px){.btns,.btns-secondary{grid-template-columns:1fr}}
 </style>
 </head>
@@ -54,108 +69,155 @@ button:disabled{opacity:.5;cursor:not-allowed}
     <h2>⚡ KRONOS 3.0</h2>
     <div class="time-badge" id="clock">--:--</div>
   </div>
-  <div class="user-panel">
-    <div class="user-name" id="userName">Cargando...</div>
+
+  <!-- Identificacion -->
+  <div class="panel">
+    <div class="panel-title">Identificacion</div>
+    <div class="field">
+      <label for="empId">ID del colaborador (cedula)</label>
+      <input type="text" id="empId" placeholder="Sin puntos ni comas" inputmode="numeric" autocomplete="off">
+    </div>
+    <div class="field">
+      <label for="ecosystem">Ecosistema</label>
+      <select id="ecosystem" class="select-loading">
+        <option value="">Cargando...</option>
+      </select>
+    </div>
+    <button class="btn-search" id="btnBuscar" onclick="buscarColaborador()">🔎 Confirmar</button>
+  </div>
+
+  <!-- Info colaborador confirmado -->
+  <div class="user-panel" id="userPanel">
+    <div class="user-name" id="userName"></div>
     <div class="user-meta" id="userMeta"></div>
   </div>
+
+  <!-- Estado -->
   <div class="status-box s-info" id="statusBox">
     <div class="s-emoji">ℹ️</div>
-    <div id="statusText">Cargando tu información...</div>
+    <div id="statusText">Ingresa tu ID y ecosistema, luego confirma.</div>
   </div>
+
+  <!-- Botones de marcacion -->
   <div class="btns">
-    <button class="btn-entry" id="btnEntry"  onclick="mark('entry')">📥 Entrada</button>
-    <button class="btn-exit"  id="btnExit"   onclick="mark('exit')">📤 Salida</button>
+    <button class="btn-entry" id="btnEntry" onclick="marcar('entry')" disabled>📥 Entrada</button>
+    <button class="btn-exit"  id="btnExit"  onclick="marcar('exit')"  disabled>📤 Salida</button>
   </div>
   <div class="btns-secondary">
-    <button class="btn-lunch" id="btnLunchOut" onclick="mark('lunch_out')">🍽 Salir almuerzo</button>
-    <button class="btn-lunch" id="btnLunchIn"  onclick="mark('lunch_in')">☕ Volver almuerzo</button>
+    <button class="btn-lunch" id="btnLunchOut" onclick="marcar('lunch_out')" disabled>🍽 Salir almuerzo</button>
+    <button class="btn-lunch" id="btnLunchIn"  onclick="marcar('lunch_in')"  disabled>☕ Volver almuerzo</button>
   </div>
-  <button class="btn-reset" id="btnReset" onclick="refreshStatus()">↩ Ver estado actualizado</button>
+  <button class="btn-reset" id="btnReset" onclick="resetForm()">↩ Marcar otro colaborador</button>
+
   <div class="footer-note" id="footerNote">
-    Primero carga tu información. La ubicación puede ser solicitada según tu área.
+    La ubicacion puede ser solicitada segun tu area de trabajo.
   </div>
-  <div class="logout" onclick="logout()">Cerrar sesión</div>
+  <div class="admin-link"><a href="/login.html">Acceso administradores</a></div>
 </div>
 </div>
 
 <script>
-const API   = '';
-let busy    = false;
-let userInfo = null;
+const API = '';
+let busy = false;
+let confirmedUser = null;
 
-// ─── Auth ───
-const token = localStorage.getItem('kr_token');
-const user  = JSON.parse(localStorage.getItem('kr_user') || '{}');
-if (!token) { window.location.href = '/login.html'; }
-
-// ─── Reloj ───
+// Reloj
 function updateClock() {
-  const now = new Date();
   document.getElementById('clock').textContent =
-    now.toLocaleTimeString('es-CO',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+    new Date().toLocaleTimeString('es-CO',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
 }
 setInterval(updateClock, 1000); updateClock();
 
-// ─── Cargar info de usuario y estado del día ───
-async function loadUserInfo() {
-  try {
-    const [meRes, todayRes] = await Promise.all([
-      fetch(`${API}/api/auth/me`,          {headers:{Authorization:`Bearer ${token}`}}),
-      fetch(`${API}/api/attendance/today`, {headers:{Authorization:`Bearer ${token}`}})
-    ]);
-    if (meRes.status === 401) { logout(); return; }
+// Cargar ecosistemas
+fetch(API + '/api/public/areas')
+  .then(r => r.json())
+  .then(d => {
+    const sel = document.getElementById('ecosystem');
+    sel.className = '';
+    sel.innerHTML = '<option value="">Selecciona tu area...</option>';
+    (d.areas || []).forEach(a => {
+      const opt = document.createElement('option');
+      opt.value = opt.textContent = a;
+      sel.appendChild(opt);
+    });
+  }).catch(() => {
+    // Fallback
+    const sel = document.getElementById('ecosystem');
+    sel.className = '';
+    sel.innerHTML = '<option value="">Selecciona...</option>';
+    ['Instalaciones','Sac','Ventas','Ventas Bog','Accounting and treasury',
+     'Soporte N2','Soporte en sitio','CEDI','Relevamiento','Noc'].forEach(a => {
+      const opt = document.createElement('option');
+      opt.value = opt.textContent = a;
+      sel.appendChild(opt);
+    });
+  });
 
-    const me    = await meRes.json();
-    const today = await todayRes.json();
-
-    if (me.ok) {
-      userInfo = me.user;
-      document.getElementById('userName').textContent = me.user.full_name;
-      document.getElementById('userMeta').textContent =
-        [me.user.cargo, me.user.area, me.user.shift && `Turno: ${me.user.shift}`]
-        .filter(Boolean).join(' · ');
-    }
-
-    const sess = today.session;
-    let msg = '';
-    let cls = 's-info';
-    let emoji = 'ℹ️';
-
-    if (!sess || !sess.entry_time) {
-      msg = 'No has marcado entrada hoy.\nPresiona "Entrada" para iniciar tu jornada.';
-    } else if (sess.entry_time && !sess.exit_time) {
-      const h = new Date(sess.entry_time).toLocaleTimeString('es-CO',{hour:'2-digit',minute:'2-digit',timeZone:'America/Bogota'});
-      msg = `✅ Jornada activa desde las ${h}.`;
-      if (sess.late_minutes > 0) msg += `\n⚠️ Tardanza: ${sess.late_minutes} min.`;
-      cls = 's-ok'; emoji = '✅';
-    } else if (sess.exit_time) {
-      const hi = new Date(sess.entry_time).toLocaleTimeString('es-CO',{hour:'2-digit',minute:'2-digit',timeZone:'America/Bogota'});
-      const ho = new Date(sess.exit_time).toLocaleTimeString('es-CO',{hour:'2-digit',minute:'2-digit',timeZone:'America/Bogota'});
-      msg = `Jornada cerrada — Entrada: ${hi} | Salida: ${ho}\nHoras: ${sess.total_hours||'--'}`;
-      cls = 's-info'; emoji = '📋';
-    }
-
-    setStatus(cls, emoji, msg);
-  } catch(e) {
-    setStatus('s-error','⛔','Error cargando información. Recarga la página.');
-  }
-}
-loadUserInfo();
-
-// ─── Marcación ───
-async function mark(type) {
+// Buscar y confirmar colaborador
+async function buscarColaborador() {
   if (busy) return;
+  const id  = document.getElementById('empId').value.trim();
+  const eco = document.getElementById('ecosystem').value;
+  if (!id || !eco) { setStatus('s-warn','⚠️','Ingresa tu ID y selecciona tu ecosistema.'); return; }
+
   busy = true;
-  setAllDisabled(true);
-  setStatus('s-info','⏳','Procesando...');
+  document.getElementById('btnBuscar').disabled = true;
+  setStatus('s-info','⏳','Verificando...');
 
   try {
-    const [ipData, geoData] = await Promise.all([getIP(), getGeo()]);
+    const res = await fetch(`${API}/api/public/employee/${id}?ecosystem=${encodeURIComponent(eco)}`);
+    const d = await res.json();
+    if (d.ok) {
+      confirmedUser = { id, ecosystem: eco, full_name: d.employee.full_name, cargo: d.employee.cargo };
+      document.getElementById('userPanel').classList.add('visible');
+      document.getElementById('userName').textContent = d.employee.full_name;
+      document.getElementById('userMeta').textContent = d.employee.cargo + ' · ' + eco;
+      setAllEnabled(true);
+      setStatus('s-ok','✅','Listo ' + d.employee.full_name.split(' ')[0] + '. Selecciona tu marcacion.');
+      document.getElementById('footerNote').textContent =
+        geoObligatoria(eco) ? '📍 Tu area requiere ubicacion obligatoria.' :
+        requiereGeo(eco)    ? '📍 Se solicitara tu ubicacion como referencia.' :
+        'Marcacion sin requisito de ubicacion.';
+    } else {
+      confirmedUser = null;
+      setStatus('s-error','⛔', d.message || 'ID o ecosistema no encontrado.');
+      setAllEnabled(false);
+    }
+  } catch(e) {
+    setStatus('s-error','⛔','Error de conexion. Verifica tu red.');
+    setAllEnabled(false);
+  }
+  busy = false;
+  document.getElementById('btnBuscar').disabled = false;
+}
 
-    const res = await fetch(`${API}/api/attendance/mark`, {
+// Marcar
+async function marcar(type) {
+  if (busy || !confirmedUser) return;
+  busy = true;
+  setAllEnabled(false);
+
+  const eco = confirmedUser.ecosystem;
+  const bloqueaSin = geoObligatoria(eco);
+  const pideGeo    = requiereGeo(eco);
+
+  if (bloqueaSin) setStatus('s-info','📍','Solicitando ubicacion obligatoria...');
+  else setStatus('s-info','⏳','Registrando...');
+
+  try {
+    const [ipData, geoData] = await Promise.all([getIP(), pideGeo ? getGeo() : Promise.resolve({lat:null,lon:null})]);
+
+    if (bloqueaSin && (!geoData.lat || !geoData.lon)) {
+      setStatus('s-error','❌','No se pudo obtener tu ubicacion.\n1. Activa el GPS\n2. Permite ubicacion en el navegador\n3. Reintenta');
+      busy = false; setAllEnabled(true); return;
+    }
+
+    const res = await fetch(API + '/api/public/mark', {
       method: 'POST',
-      headers: { 'Content-Type':'application/json', Authorization:`Bearer ${token}` },
+      headers: {'Content-Type':'application/json'},
       body: JSON.stringify({
+        employee_id: confirmedUser.id,
+        ecosystem: confirmedUser.ecosystem,
         type,
         lat: geoData.lat, lon: geoData.lon,
         geo_accuracy_m: geoData.accuracy,
@@ -163,26 +225,61 @@ async function mark(type) {
         ip_data: ipData
       })
     });
-    const data = await res.json();
+    const d = await res.json();
 
-    if (data.ok) {
-      setStatus('s-ok','✅', data.message);
+    if (d.ok) {
+      const isWarn = d.message && d.message.includes('Tardanza');
+      setStatus(isWarn ? 's-warn' : 's-ok', isWarn ? '⚠️' : '✅', d.message);
       document.getElementById('btnReset').style.display = 'block';
+      setAllEnabled(false);
     } else {
-      const isWarn = data.message?.includes('⚠️') || data.message?.includes('ya tienes');
-      setStatus(isWarn ? 's-warn' : 's-error', isWarn ? '⚠️' : '⛔', data.message);
+      const isWarn = d.message && (d.message.includes('ya tienes') || d.message.includes('cerrada') || d.message.includes('Intervalo') || d.message.includes('maximo'));
+      setStatus(isWarn ? 's-warn' : 's-error', isWarn ? '⚠️' : '⛔', d.message);
+      setAllEnabled(true);
     }
   } catch(e) {
-    setStatus('s-error','⛔','Error de conexión. Verifica tu red e intenta de nuevo.');
+    setStatus('s-error','⛔','Error de conexion.');
+    setAllEnabled(true);
   }
-
   busy = false;
-  setAllDisabled(false);
+}
+
+function resetForm() {
+  confirmedUser = null;
+  document.getElementById('empId').value = '';
+  document.getElementById('ecosystem').value = '';
+  document.getElementById('userPanel').classList.remove('visible');
+  document.getElementById('btnReset').style.display = 'none';
+  setAllEnabled(false);
+  setStatus('s-info','ℹ️','Ingresa tu ID y ecosistema, luego confirma.');
+  document.getElementById('empId').focus();
+}
+
+function setStatus(cls, emoji, text) {
+  const box = document.getElementById('statusBox');
+  box.className = 'status-box ' + cls;
+  box.innerHTML = '<div class="s-emoji">' + emoji + '</div><div id="statusText">' + text + '</div>';
+}
+
+function setAllEnabled(state) {
+  ['btnEntry','btnExit','btnLunchOut','btnLunchIn'].forEach(id => {
+    document.getElementById(id).disabled = !state;
+  });
+}
+
+// Geo helpers
+function requiereGeo(eco) {
+  return ['soporte en sitio','instalaciones','ventas bog','accounting and treasury']
+    .includes((eco||'').toLowerCase().trim());
+}
+function geoObligatoria(eco) {
+  return ['soporte en sitio','ventas bog','accounting and treasury']
+    .includes((eco||'').toLowerCase().trim());
 }
 
 async function getIP() {
   try {
-    const r = await fetch('https://ipapi.co/json/',{signal:AbortSignal.timeout(3000)});
+    const r = await fetch('https://ipapi.co/json/', {signal: AbortSignal.timeout(3000)});
     return await r.json();
   } catch { return {ip:'N/A'}; }
 }
@@ -198,30 +295,15 @@ async function getGeo() {
   });
 }
 
-function setStatus(cls, emoji, text) {
-  const box  = document.getElementById('statusBox');
-  const txt  = document.getElementById('statusText');
-  box.className = `status-box ${cls}`;
-  document.querySelector('.s-emoji').textContent = emoji;
-  txt.textContent = text;
-}
-
-function setAllDisabled(state) {
-  ['btnEntry','btnExit','btnLunchOut','btnLunchIn'].forEach(id => {
-    document.getElementById(id).disabled = state;
-  });
-}
-
-function refreshStatus() {
-  document.getElementById('btnReset').style.display = 'none';
-  loadUserInfo();
-}
-
-function logout() {
-  localStorage.removeItem('kr_token');
-  localStorage.removeItem('kr_user');
-  window.location.href = '/login.html';
-}
+// Enter en campo ID confirma
+document.getElementById('empId').addEventListener('keydown', e => {
+  if (e.key === 'Enter') buscarColaborador();
+});
+document.getElementById('ecosystem').addEventListener('change', () => {
+  confirmedUser = null;
+  document.getElementById('userPanel').classList.remove('visible');
+  setAllEnabled(false);
+});
 </script>
 </body>
 </html>

@@ -281,7 +281,7 @@ tr:hover td{background:#f8fafc}
   <div id="alertSummary" style="margin-bottom:12px;font-size:13px;color:#64748b"></div>
   <div class="table-wrap">
     <table>
-      <thead><tr><th>Colaborador</th><th>Area</th><th>Cargo</th><th>Lider</th><th>Entrada</th><th>Horas activo</th></tr></thead>
+      <thead><tr><th>Colaborador</th><th>Area</th><th>Cargo</th><th>Lider</th><th>Entrada</th><th>Ubicacion entrada</th><th>IP</th><th>Horas activo</th></tr></thead>
       <tbody id="alertsBody"><tr><td colspan="6" style="text-align:center;padding:20px;color:#94a3b8">Selecciona un umbral y consulta</td></tr></tbody>
     </table>
   </div>
@@ -472,6 +472,14 @@ async function loadDashboard(){
   }).join('') || '<tr><td colspan="8" style="text-align:center;padding:20px;color:#94a3b8">Sin registros para esta fecha</td></tr>';
 }
 
+// Helper: generar link de Google Maps desde coordenadas
+function mapsLink(lat, lon) {
+  if (!lat || !lon) return '--';
+  const url = 'https://maps.google.com/?q=' + lat + ',' + lon;
+  return '<a href="' + url + '" target="_blank" style="color:#3b82f6;font-size:11px">📍 Ver en Maps</a>';
+}
+}
+
 async function exportDailyXLSX(){
   const date=document.getElementById('dash-date').value;
   const area=document.getElementById('dash-area').value;
@@ -501,7 +509,7 @@ async function loadUsers(){
     <td><span class="badge ${u.status==='active'?'badge-ok':'badge-err'}">${u.status}</span></td>
     <td style="display:flex;gap:6px">
       <button class="btn btn-primary btn-sm" onclick="editUser('${u.id}')">✏</button>
-      <button class="btn btn-neutral btn-sm" onclick="resetPass('${u.id}','${h(u.full_name)}')">🔑</button>
+      ${u.role !== 'employee' ? `<button class="btn btn-neutral btn-sm" onclick="resetPass('${u.id}','${h(u.full_name)}')">🔑</button>` : ''}
       <button class="btn btn-danger btn-sm" onclick="deleteUser('${u.id}','${h(u.full_name)}')">🗑</button>
     </td>
   </tr>`).join('') || '<tr><td colspan="7" style="text-align:center;padding:20px;color:#94a3b8">Sin resultados</td></tr>';
@@ -775,6 +783,8 @@ async function loadAlerts() {
     <td style="font-size:12px">${h(r.cargo||'--')}</td>
     <td style="font-size:12px">${h(r.leader_name||'--')}</td>
     <td style="font-size:12px">${r.entry_time ? new Date(r.entry_time).toLocaleTimeString('es-CO',{hour:'2-digit',minute:'2-digit',timeZone:'America/Bogota'}) : '--'}</td>
+    <td>${mapsLink(r.entry_lat, r.entry_lon)}</td>
+    <td style="font-size:11px;color:#64748b">${r.entry_ip||'--'}</td>
     <td><span style="font-weight:700;color:${r.hours_open>12?'#ef4444':'#f59e0b'}">${r.hours_open}h</span></td>
   </tr>`).join('');
 }
@@ -861,13 +871,4 @@ async function removeExcludedRole(cargo) {
 }
 
 async function deleteUser(id, name) {
-  if (!confirm('Borrar a ' + name + '?\n\nSe eliminaran todas sus marcaciones y registros.\nEsta accion no se puede deshacer.')) return;
-  const res = await api('/api/users/' + id, {method:'DELETE'});
-  const d = await res.json();
-  toast(d.message, d.ok);
-  if (d.ok) loadUsers();
-}
-
-async function borrarTodosColaboradores() {
-  if (!confirm('ATENCION: Se borraran TODOS los colaboradores (role=employee) y sus marcaciones.\n\nLos administradores y lideres NO se borran.\n\n¿Estas seguro?')) return;
-  if (!confirm('Confirma de nuevo: borrar todos los colaboradores imp
+  if (!confirm('Borrar a ' + name + '?\n\nSe eliminaran todas sus marcaciones y regi

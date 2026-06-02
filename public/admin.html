@@ -349,8 +349,8 @@ tr:hover td{background:#f8fafc}
         Hoy (hasta 14/07/2026): <strong>44 h/semana</strong><br>
         Desde 15/07/2026: <strong>42 h/semana</strong><br><br>
         <strong>Recargos:</strong><br>
-        Nocturno (9pm-6am): +35% | Dominical: +75%<br>
-        Festivo: +75% | HED: +25% | HEN: +75%<br>
+        Nocturno (7pm-6am): +35% | Dominical: +100%<br>
+        Festivo: +100% | HED: +25% | HEN: +75%<br>
         HEDF: +100% | HENDF: +150%
       </div>
     </div>
@@ -366,9 +366,9 @@ tr:hover td{background:#f8fafc}
         Hoy (hasta 14/07/2026): <strong>44 h/semana</strong><br>
         Desde 15/07/2026: <strong>42 h/semana</strong><br><br>
         <strong>Recargos activos:</strong><br>
-        Nocturno (9pm-6am): +35%<br>
-        Dominical: +75%<br>
-        Festivo: +75%<br>
+        Nocturno (7pm-6am): +35%<br>
+        Dominical: +100%<br>
+        Festivo: +100%<br>
         HED: +25% | HEN: +75%<br>
         HEDF: +100% | HENDF: +150%
       </div>
@@ -420,11 +420,13 @@ function toast(msg,ok=true){
   setTimeout(()=>el.className='',3000);
 }
 function showTab(id){
-  document.querySelectorAll('.tab').forEach((t,i)=>t.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
   document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
-  const tabs=['dashboard','users','import','reports','corrections','config'];
-  document.querySelectorAll('.tab')[tabs.indexOf(id)]?.classList.add('active');
-  document.getElementById('tab-'+id)?.classList.add('active');
+  const tabs=['dashboard','users','import','reports','corrections','alerts','config'];
+  const idx=tabs.indexOf(id);
+  if(idx>=0) document.querySelectorAll('.tab')[idx]?.classList.add('active');
+  const panel=document.getElementById('tab-'+id);
+  if(panel) panel.classList.add('active');
 }
 function fmt(dt){if(!dt)return '--'; return new Date(dt).toLocaleTimeString('es-CO',{hour:'2-digit',minute:'2-digit',timeZone:'America/Bogota'});}
 function fmtDate(d){if(!d)return '--'; return new Date(d+'T12:00:00').toLocaleDateString('es-CO');}
@@ -871,4 +873,4 @@ async function removeExcludedRole(cargo) {
 }
 
 async function deleteUser(id, name) {
-  if (!confirm('Borrar a ' + name + '?\n\nSe eliminaran todas sus marcaciones y regi
+  if (!confirm('Borra

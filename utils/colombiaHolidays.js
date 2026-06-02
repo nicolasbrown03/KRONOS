@@ -139,13 +139,20 @@ function isNightHour(datetime) {
 
 /**
  * Porcentaje de recargo dominical/festivo segun la fecha.
- * Ley 2466 de 2025: desde 25 dic 2025 el recargo es 100% (antes 75%).
+ * Ley 2466 de 2025 - tabla progresiva:
+ *   Hasta 30-jun-2025:          75%
+ *   1-jul-2025 a 30-jun-2026:   80%
+ *   1-jul-2026 a 30-jun-2027:   90%  <- VIGENTE HOY (jun 2026)
+ *   Desde 1-jul-2027:          100%
  * @param {Date} referenceDate
- * @returns {number} factor (0.75 o 1.0)
+ * @returns {number} factor decimal (0.75, 0.80, 0.90 o 1.0)
  */
 function getSundayHolidaySurcharge(referenceDate) {
-  const d = referenceDate instanceof Date ? referenceDate : new Date(referenceDate);
-  return d >= new Date('2025-12-25T00:00:00') ? 1.0 : 0.75;
+  const d = referenceDate instanceof Date ? referenceDate : new Date(toDateString(referenceDate) + 'T12:00:00');
+  if (d >= new Date('2027-07-01')) return 1.00; // 100%
+  if (d >= new Date('2026-07-01')) return 0.90; // 90%
+  if (d >= new Date('2025-07-01')) return 0.80; // 80%
+  return 0.75;                                   // 75%
 }
 
 /**
@@ -265,20 +272,4 @@ function calculateLateMinutes(markedAt, shiftStart, toleranceMin = 5) {
 // ─────────────────────────────────────────────────────────────
 // Helpers internos
 // ─────────────────────────────────────────────────────────────
-function toDateString(date) {
-  if (typeof date === 'string') return date.substring(0, 10);
-  return date.toISOString().substring(0, 10);
-}
-
-module.exports = {
-  isHoliday,
-  isSunday,
-  isSundayOrHoliday,
-  maxOrdinaryHoursPerWeek,
-  maxOrdinaryHoursPerDay,
-  isNightHour,
-  getSundayHolidaySurcharge,
-  calculateHoursBreakdown,
-  calculateLateMinutes,
-  HOLIDAYS_2026,
-};
+function toDateStrin

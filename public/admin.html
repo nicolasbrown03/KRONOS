@@ -349,8 +349,8 @@ tr:hover td{background:#f8fafc}
         Hoy (hasta 14/07/2026): <strong>44 h/semana</strong><br>
         Desde 15/07/2026: <strong>42 h/semana</strong><br><br>
         <strong>Recargos:</strong><br>
-        Nocturno (7pm-6am): +35% | Dominical: +100%<br>
-        Festivo: +100% | HED: +25% | HEN: +75%<br>
+        Nocturno (7pm-6am): +35% | Dominical: +90% (2026)<br>
+        Festivo: +90% | HED: +25% | HEN: +75%<br>
         HEDF: +100% | HENDF: +150%
       </div>
     </div>
@@ -367,8 +367,8 @@ tr:hover td{background:#f8fafc}
         Desde 15/07/2026: <strong>42 h/semana</strong><br><br>
         <strong>Recargos activos:</strong><br>
         Nocturno (7pm-6am): +35%<br>
-        Dominical: +100%<br>
-        Festivo: +100%<br>
+        Dominical: +90% (jul26-jun27) → +100% jul27<br>
+        Festivo: mismos valores | HED: +25% | HEN: +75%<br>
         HED: +25% | HEN: +75%<br>
         HEDF: +100% | HENDF: +150%
       </div>
@@ -873,4 +873,130 @@ async function removeExcludedRole(cargo) {
 }
 
 async function deleteUser(id, name) {
-  if (!confirm('Borra
+  if (!confirm('Borrar a ' + name + '?\n\nSe eliminaran todas sus marcaciones.\nEsta accion no se puede deshacer.')) return;
+  const res = await api('/api/users/' + id, {method:'DELETE'});
+  const d = await res.json();
+  toast(d.message, d.ok);
+  if (d.ok) loadUsers();
+}
+
+async function borrarTodosColaboradores() {
+  if (!confirm('ATENCION: Se borraran TODOS los colaboradores (role=employee) y sus marcaciones.\n\nLos administradores y lideres NO se borran.\n\n¿Estas seguro?')) return;
+  if (!confirm('Confirma de nuevo: borrar todos los colaboradores importados. No se puede deshacer.')) return;
+  const res = await api('/api/users/bulk-delete', {method:'DELETE', body:JSON.stringify({confirm:'CONFIRMAR_BORRADO'})});
+  const d = await res.json();
+  toast(d.message, d.ok);
+  if (d.ok) { loadUsers(); loadImportHistory(); }
+}
+
+// ─────────────────────── CONFIG ───────────────────────
+async function loadSedesConfig(){
+  const res=await api('/api/sedes'); const d=await res.json();
+  document.getElementById('sedesList').innerHTML=(d.sedes||[]).map(s=>
+    `<div style="padding:6px 0;border-bottom:1px solid #f1f5f9">
+      <strong>${h(s.name)}</strong><br>
+      <span style="font-size:11px;color:#94a3b8">${s.lat?s.lat+', '+s.lon+' — r:'+s.radius_meters+'m':'Sin geocerca'}</span>
+    </div>`
+  ).join('')||'<span>Sin sedes configuradas</span>';
+}
+
+async function loadShiftsConfig(){
+  const res=await api('/api/shifts'); const d=await res.json();
+  document.getElementById('shiftsList').innerHTML=(d.shifts||[]).map(s=>
+    `<div style="padding:6px 0;border-bottom:1px solid #f1f5f9">
+      <strong>${h(s.name)}</strong> — ${s.start_time} → ${s.end_time}
+    </div>`
+  ).join('')||'<span>Sin turnos configurados</span>';
+}
+
+function openAddSede(){
+  const name=prompt('Nombre de la sede:'); if(!name) return;
+  const lat=prompt('Latitud (ej: 4.7110):');
+  const lon=prompt('Longitud (ej: -74.0721):');
+  const r=prompt('Radio geocerca en metros (ej: 300):','300');
+  api('/api/sedes',{method:'POST',body:JSON.stringify({name,lat:parseFloat(lat)||null,lon:parseFloat(lon)||null,radius_meters:parseInt(r)||300})})
+    .then(r=>r.json()).then(d=>{toast(d.ok?'Sede "'+name+'" creada':d.message,d.ok);if(d.ok)loadSedesConfig();});
+}
+
+function openAddShift(){
+  const name=prompt('Nombre del turno:'); if(!name) return;
+  const start=prompt('Hora inicio (HH:MM):','08:00');
+  const end=prompt('Hora fin (HH:MM):','17:00');
+  const tol=prompt('Tolerancia entrada (minutos):','5');
+  api('/api/shifts',{method:'POST',body:JSON.stringify({name,start_time:start,end_time:end,tolerance_in_min:parseInt(tol)||5})})
+    .then(r=>r.json()).then(d=>{toast(d.ok?'Turno "'+name+'" creado':d.message,d.ok);if(d.ok)loadShiftsConfig();});
+}
+
+async function loadAreaConfig() {
+  const res = await api('/api/areas');
+  const d = await res.json();
+  const sel = document.getElementById('cfgAreaSel');
+  if (!sel) return;
+  sel.innerHTML = '<option value="">Selecciona...</option>';
+  (d.areas||[]).forEach(a => {
+    const opt = document.createElement('option');
+    opt.value = a.id; opt.textContent = a.name;
+    opt.dataset.maxTurns = a.max_turns || 1;
+    opt.dataset.minHours = a.min_hours_between || 1;
+    opt.dataset.geoReq   = a.geo_required_override || false;
+    sel.appendChild(opt);
+  });
+  sel.onchange = function() {
+    const opt = sel.options[sel.selectedIndex];
+    document.getElementById('cfgMaxTurns').value = opt.dataset.maxTurns || 1;
+    document.getElementById('cfgMinHours').value  = opt.dataset.minHours || 1;
+    document.getElementById('cfgGeoReq').checked  = opt.dataset.geoReq === 'true';
+  };
+}
+
+async function saveAreaConfig() {
+  const areaId = document.getElementById('cfgAreaSel').value;
+  if (!areaId) { toast('Selecciona un area', false); return; }
+  const res = await api('/api/areas/'+areaId+'/settings', {method:'PUT', body:JSON.stringify({
+    max_turns: parseInt(document.getElementById('cfgMaxTurns').value)||1,
+    min_hours_between: parseFloat(document.getElementById('cfgMinHours').value)||1,
+    geo_required_override: document.getElementById('cfgGeoReq').checked
+  })});
+  const d = await res.json();
+  toast(d.message, d.ok);
+  if (d.ok) loadAreaConfig();
+}
+
+async function loadExcludedRoles() {
+  const res = await api('/api/areas/excluded-roles');
+  const d = await res.json();
+  const el = document.getElementById('excludedRoles');
+  if (!el) return;
+  if (!d.roles || !d.roles.length) { el.innerHTML = '<span style="color:#94a3b8">Sin cargos excluidos</span>'; return; }
+  el.innerHTML = d.roles.map(r => `
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid #f1f5f9">
+      <span style="font-size:13px">${h(r.cargo)}</span>
+      <button class="btn btn-danger btn-sm" onclick="removeExcludedRole('${encodeURIComponent(r.cargo)}')">x</button>
+    </div>`).join('');
+}
+
+async function addExcludedRole() {
+  const cargo = document.getElementById('newExcludedRole').value.trim();
+  if (!cargo) { toast('Escribe el cargo a excluir', false); return; }
+  if (!confirm('Excluir el cargo "'+cargo+'" de marcacion?')) return;
+  const res = await api('/api/areas/excluded-roles', {method:'POST', body:JSON.stringify({cargo})});
+  const d = await res.json();
+  toast(d.message, d.ok);
+  if (d.ok) { document.getElementById('newExcludedRole').value=''; loadExcludedRoles(); }
+}
+
+async function removeExcludedRole(cargo) {
+  if (!confirm('Quitar la exclusion de este cargo?')) return;
+  const res = await api('/api/areas/excluded-roles/'+cargo, {method:'DELETE'});
+  const d = await res.json();
+  toast(d.message, d.ok);
+  if (d.ok) loadExcludedRoles();
+}
+
+function logout(){
+  localStorage.removeItem('kr_token'); localStorage.removeItem('kr_user');
+  window.location.href='/login.html';
+}
+</script>
+</body>
+</html>

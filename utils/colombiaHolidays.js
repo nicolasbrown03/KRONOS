@@ -7,13 +7,19 @@
  *   Desde 15/07/2025: 44 h/semana  ← VIGENTE mayo 2026
  *   Desde 15/07/2026: 42 h/semana
  *
- * Recargos (Código Sustantivo del Trabajo + Ley 789/2002):
- *   Nocturno ordinario (9pm-6am):           +35% sobre hora ordinaria
- *   Dominical/festivo ordinario:            +75%
- *   Hora extra diurna (HED):                +25%
- *   Hora extra nocturna (HEN):              +75%
- *   Hora extra diurna dom/festivo (HEDF):   +100%
- *   Hora extra nocturna dom/festivo (HENDF):+150%
+ * Recargos (CST + Ley 789/2002 + Ley 2466/2025):
+ *
+ *   ANTES del 25-dic-2025:
+ *     Nocturno ordinario (9pm-6am):   +35%
+ *     Dominical/festivo:              +75%
+ *
+ *   DESDE el 25-dic-2025 (Ley 2466 Reforma Laboral):
+ *     Nocturno ordinario (7pm-6am):   +35%
+ *     Dominical/festivo:              +100%
+ *
+ *   Siempre:
+ *     HED:   +25% | HEN:   +75%
+ *     HEDF: +100% | HENDF: +150%
  */
 
 'use strict';
@@ -114,12 +120,32 @@ function maxOrdinaryHoursPerDay(referenceDate) {
 }
 
 /**
- * Determina si una hora está en período nocturno (9pm - 6am).
+ * Determina si una hora esta en periodo nocturno.
+ *
+ * Ley 2466 de 2025 (Reforma Laboral):
+ *   Vigente desde 25 dic 2025: jornada nocturna 7pm (19:00) - 6am
+ *   Antes: 9pm (21:00) - 6am
+ *
  * @param {Date} datetime
  */
 function isNightHour(datetime) {
   const h = datetime.getHours();
-  return h >= 21 || h < 6;
+  const ley2466 = new Date('2025-12-25T00:00:00');
+  if (datetime >= ley2466) {
+    return h >= 19 || h < 6; // desde 7pm - Ley 2466/2025
+  }
+  return h >= 21 || h < 6; // 9pm - ley anterior
+}
+
+/**
+ * Porcentaje de recargo dominical/festivo segun la fecha.
+ * Ley 2466 de 2025: desde 25 dic 2025 el recargo es 100% (antes 75%).
+ * @param {Date} referenceDate
+ * @returns {number} factor (0.75 o 1.0)
+ */
+function getSundayHolidaySurcharge(referenceDate) {
+  const d = referenceDate instanceof Date ? referenceDate : new Date(referenceDate);
+  return d >= new Date('2025-12-25T00:00:00') ? 1.0 : 0.75;
 }
 
 /**
@@ -250,6 +276,8 @@ module.exports = {
   isSundayOrHoliday,
   maxOrdinaryHoursPerWeek,
   maxOrdinaryHoursPerDay,
+  isNightHour,
+  getSundayHolidaySurcharge,
   calculateHoursBreakdown,
   calculateLateMinutes,
   HOLIDAYS_2026,

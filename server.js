@@ -229,78 +229,6 @@ async function initAdmin() {
 // ─────────────────────────────────────────────────────────────
 // Iniciar servidor
 // ─────────────────────────────────────────────────────────────
-
-// Endpoint PUBLICO de marcacion (sin password, solo ID + ecosistema)
-app.post('/api/public/mark', async (req, res) => {
-  try {
-    const { employee_id, ecosystem, type, lat, lon, geo_accuracy_m, ip_address, ip_data } = req.body;
-    if (!employee_id || !ecosystem || !type) {
-      return res.status(400).json({ ok: false, message: 'ID, ecosistema y tipo son requeridos.' });
-    }
-    const { rows } = await db.query(
-      `SELECT u.id, u.full_name, u.role, u.status, u.requires_attendance, a.name AS area_name
-       FROM users u
-       LEFT JOIN areas a ON a.id = u.area_id
-       WHERE u.employee_id=$1 AND LOWER(a.name)=LOWER($2) LIMIT 1`,
-      [String(employee_id).trim(), String(ecosystem).trim()]
-    );
-    if (!rows.length) {
-      return res.status(404).json({ ok: false, message: 'ID o ecosistema no encontrado. Verifica tus datos.' });
-    }
-    const user = rows[0];
-    if (user.status !== 'active') {
-      return res.status(403).json({ ok: false, message: 'Usuario inactivo. Contacta al administrador.' });
-    }
-    // Crear token temporal para reutilizar el endpoint protegido
-    const jwt = require('jsonwebtoken');
-    const tempToken = jwt.sign(
-      { id: user.id, employee_id: String(employee_id).trim(), full_name: user.full_name, role: user.role },
-      process.env.JWT_SECRET,
-      { expiresIn: '5m' }
-    );
-    // Llamar internamente al endpoint de marcacion
-    const fetch = require('node:http');
-    // Hacer la solicitud directamente al modulo de attendance
-    const attRouter = require('./routes/attendance');
-    req.user = { id: user.id, employee_id: String(employee_id).trim(), full_name: user.full_name, role: user.role };
-    req.body = { type, lat, lon, geo_accuracy_m, ip_address, ip_data };
-    attRouter.handle(req, res, () => res.status(404).json({ ok: false, message: 'Ruta no encontrada.' }));
-  } catch (err) {
-    console.error('public mark error:', err.message);
-    res.status(500).json({ ok: false, message: 'Error interno.' });
-  }
-});
-
-// Endpoint publico: verificar colaborador (para autocompletar info antes de marcar)
-app.get('/api/public/employee/:employee_id', async (req, res) => {
-  try {
-    const { employee_id } = req.params;
-    const ecosystem = req.query.ecosystem || '';
-    const { rows } = await db.query(
-      `SELECT u.employee_id, u.full_name, u.cargo, u.status, a.name AS area
-       FROM users u
-       LEFT JOIN areas a ON a.id = u.area_id
-       WHERE u.employee_id=$1 AND ($2='' OR LOWER(a.name)=LOWER($2)) LIMIT 1`,
-      [String(employee_id).trim(), ecosystem]
-    );
-    if (!rows.length) return res.status(404).json({ ok: false, message: 'Colaborador no encontrado.' });
-    if (rows[0].status !== 'active') return res.status(403).json({ ok: false, message: 'Colaborador inactivo.' });
-    res.json({ ok: true, employee: rows[0] });
-  } catch (err) {
-    res.status(500).json({ ok: false, message: 'Error interno.' });
-  }
-});
-
-// Endpoint publico: areas disponibles
-app.get('/api/public/areas', async (req, res) => {
-  try {
-    const { rows } = await db.query('SELECT name FROM areas ORDER BY name');
-    res.json({ ok: true, areas: rows.map(r => r.name) });
-  } catch (err) {
-    res.status(500).json({ ok: false, message: 'Error.' });
-  }
-});
-
 app.listen(PORT, async () => {
   console.log(`\n⚡ KRONOS 3.0 corriendo en puerto ${PORT}`);
   console.log(`   Entorno: ${process.env.NODE_ENV || 'development'}`);
@@ -310,23 +238,30 @@ app.listen(PORT, async () => {
   console.log(`   Listo ✅\n`);
 });
 
-// Keep-alive: evita que Render free tier duerma el servidor
+// ─────────────────────────────────────────────────────────────
+// KEEP-ALIVE — evita que Render free tier duerma el servidor
+// Se auto-pinga cada 14 minutos (Render duerme a los 15 min)
+// Render inyecta RENDER_EXTERNAL_URL automáticamente en producción
+// ─────────────────────────────────────────────────────────────
 function startKeepAlive() {
   const appUrl = process.env.RENDER_EXTERNAL_URL;
   if (!appUrl) {
     console.log('   Keep-alive: desactivado (solo activo en Render)');
     return;
   }
+
   const https = require('https');
-  const INTERVAL_MS = 14 * 60 * 1000;
+  const INTERVAL_MS = 14 * 60 * 1000; // 14 minutos
+
   setInterval(() => {
-    https.get(appUrl + '/api/health', (res) => {
-      console.log('[keep-alive] ping OK ' + res.statusCode);
+    https.get(`${appUrl}/api/health`, (res) => {
+      console.log(`[keep-alive] ping OK → ${res.statusCode}`);
     }).on('error', (err) => {
-      console.warn('[keep-alive] ping fallo:', err.message);
+      console.warn('[keep-alive] ping falló:', err.message);
     });
   }, INTERVAL_MS);
-  console.log('   Keep-alive: activo (ping cada 14 min -> ' + appUrl + '/api/health)');
+
+  console.log(`   Keep-alive: activo (ping cada 14 min → ${appUrl}/api/health)`);
 }
 
 module.exports = app;

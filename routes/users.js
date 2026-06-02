@@ -411,4 +411,28 @@ router.get('/import/history', requireAuth, requireRole('super_admin','admin'), a
   }
 });
 
-// ───────────────
+// ─────────────────────────────────────────────────────────────
+// Helpers
+// ─────────────────────────────────────────────────────────────
+async function resolveRelations(areaName, sedeName, shiftName, leaderEmpId) {
+  let area_id = null, sede_id = null, shift_id = null, leader_id = null;
+  if (areaName) {
+    const r = await db.query('SELECT id FROM areas WHERE name ILIKE $1 LIMIT 1', [areaName]);
+    if (r.rows.length) { area_id = r.rows[0].id; }
+    else { const ins = await db.query('INSERT INTO areas (name) VALUES ($1) RETURNING id', [areaName]); area_id = ins.rows[0].id; }
+  }
+  if (sedeName) { const r = await db.query('SELECT id FROM sedes WHERE name ILIKE $1 LIMIT 1', [sedeName]); if (r.rows.length) sede_id = r.rows[0].id; }
+  if (shiftName) { const r = await db.query('SELECT id FROM shifts WHERE name ILIKE $1 LIMIT 1', [shiftName]); if (r.rows.length) shift_id = r.rows[0].id; }
+  if (leaderEmpId) { const r = await db.query('SELECT id FROM users WHERE employee_id=$1 LIMIT 1', [leaderEmpId]); if (r.rows.length) leader_id = r.rows[0].id; }
+  return { area_id, sede_id, shift_id, leader_id };
+}
+
+async function auditLog(db, actor, action, entityType, entityId, before, after) {
+  await db.query(
+    `INSERT INTO audit_logs (actor_id, actor_name, actor_role, action, entity_type, entity_id, payload_before, payload_after) VALUES ($1,$2,$3,$4,$5,$6,$7,$8)`,
+    [actor.id, actor.full_name, actor.role, action, entityType, entityId,
+     before ? JSON.stringify(before) : null, after ? JSON.stringify(after) : null]
+  ).catch(() => {});
+}
+
+module.exports = router;

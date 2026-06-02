@@ -184,6 +184,14 @@ tr:hover td{background:#f8fafc}
 
   <div id="uploadResult" class="upload-result"></div>
 
+  <div style="margin-top:16px;padding:14px;background:#fff1f2;border:1px solid #fecdd3;border-radius:10px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
+    <div>
+      <div style="font-size:13px;font-weight:700;color:#9f1239">Datos incorrectos en la importacion</div>
+      <div style="font-size:12px;color:#be123c;margin-top:3px">Borra todos los colaboradores y vuelve a importar el archivo correcto de BUK. Los admins NO se borran.</div>
+    </div>
+    <button class="btn btn-danger btn-sm" onclick="borrarTodosColaboradores()">🗑 Borrar todos los colaboradores</button>
+  </div>
+
   <div style="margin-top:24px">
     <div class="sec-title" style="font-size:15px">Historial de importaciones</div>
     <div class="table-wrap">
@@ -849,6 +857,15 @@ async function removeExcludedRole(cargo) {
   const d = await res.json();
   toast(d.message, d.ok);
   if (d.ok) loadExcludedRoles();
+}
+
+async function borrarTodosColaboradores() {
+  if (!confirm('ATENCION: Se borraran TODOS los colaboradores (role=employee) y sus marcaciones.\n\nLos administradores y lideres NO se borran.\n\n¿Estas seguro?')) return;
+  if (!confirm('Confirma de nuevo: borrar todos los colaboradores importados. No se puede deshacer.')) return;
+  const res = await api('/api/users/bulk-delete', {method:'DELETE', body:JSON.stringify({confirm:'CONFIRMAR_BORRADO'})});
+  const d = await res.json();
+  toast(d.message, d.ok);
+  if (d.ok) { loadUsers(); loadImportHistory(); }
 }
 
 function logout(){

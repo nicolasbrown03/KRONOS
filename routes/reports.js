@@ -91,15 +91,12 @@ router.get('/range', requireAuth, requireRole('super_admin','admin','leader'), a
     const enriched = rows.map(row => {
       let breakdown = null;
       if (row.entry_time && row.exit_time) {
-        // Si marcaron almuerzo manualmente usar ese tiempo
-        // Si no, y la jornada es >= 6h, descontar 60 min automaticamente (almuerzo automatico)
         let lunchMin = 0;
         if (row.lunch_out && row.lunch_in) {
           lunchMin = Math.round((new Date(row.lunch_in) - new Date(row.lunch_out)) / 60000);
         } else {
           const totalMs = new Date(row.exit_time) - new Date(row.entry_time);
-          const totalHrs = totalMs / 3600000;
-          if (totalHrs >= 9) lunchMin = 60; // descuento automatico de 1 hora
+          if (totalMs / 3600000 >= 9) lunchMin = 60;
         }
         breakdown = calculateHoursBreakdown(new Date(row.entry_time), new Date(row.exit_time), lunchMin);
       }

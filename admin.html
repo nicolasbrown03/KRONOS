@@ -1,0 +1,876 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>KRONOS 3.0 — Admin</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',Arial,sans-serif;background:#f1f5f9;min-height:100vh;color:#0f172a}
+/* NAV */
+.nav{background:#0a0e18;color:#fff;padding:0 24px;display:flex;align-items:center;
+  justify-content:space-between;height:56px;position:sticky;top:0;z-index:100}
+.nav-brand{font-size:16px;font-weight:800;letter-spacing:-.3px}
+.nav-brand span{color:#3b82f6}
+.nav-user{font-size:13px;color:#94a3b8;cursor:pointer}
+.nav-user:hover{color:#fff}
+/* TABS */
+.tabs{display:flex;gap:4px;padding:16px 24px 0;border-bottom:1px solid #e2e8f0;
+  background:#fff;overflow-x:auto}
+.tab{padding:10px 18px;font-size:13px;font-weight:700;border:none;background:none;
+  cursor:pointer;color:#64748b;border-bottom:2px solid transparent;white-space:nowrap}
+.tab.active{color:#3b82f6;border-bottom-color:#3b82f6}
+/* PANELS */
+.panel{display:none;padding:24px}
+.panel.active{display:block}
+/* CARDS STATS */
+.stats-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px;margin-bottom:24px}
+.stat-card{background:#fff;border-radius:14px;padding:16px;border:1px solid #e2e8f0}
+.stat-num{font-size:28px;font-weight:800;color:#0f172a}
+.stat-lbl{font-size:12px;color:#64748b;margin-top:2px}
+.stat-card.blue  .stat-num{color:#3b82f6}
+.stat-card.green .stat-num{color:#10b981}
+.stat-card.warn  .stat-num{color:#f59e0b}
+.stat-card.red   .stat-num{color:#ef4444}
+/* FORMS */
+.form-row{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px;margin-bottom:16px}
+.field{display:flex;flex-direction:column;gap:5px}
+.field label{font-size:12px;font-weight:700;color:#334155}
+.field input,.field select{padding:9px 12px;border:1.5px solid #e2e8f0;border-radius:9px;
+  font-size:14px;outline:none;background:#fff}
+.field input:focus,.field select:focus{border-color:#3b82f6}
+/* BUTTONS */
+.btn{padding:9px 16px;border:none;border-radius:9px;font-size:13px;font-weight:700;
+  cursor:pointer;transition:opacity .15s}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.btn-primary{background:#3b82f6;color:#fff}
+.btn-success{background:#10b981;color:#fff}
+.btn-danger {background:#ef4444;color:#fff}
+.btn-neutral{background:#475569;color:#fff}
+.btn-sm{padding:6px 12px;font-size:12px}
+/* TABLE */
+.table-wrap{background:#fff;border-radius:14px;border:1px solid #e2e8f0;overflow:hidden;margin-top:16px}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{background:#f8fafc;padding:10px 14px;text-align:left;font-weight:700;color:#334155;
+  border-bottom:1px solid #e2e8f0;white-space:nowrap}
+td{padding:10px 14px;border-bottom:1px solid #f1f5f9;vertical-align:middle}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:#f8fafc}
+.badge{display:inline-flex;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:700}
+.badge-ok   {background:#ecfdf5;color:#065f46}
+.badge-warn {background:#fff7ed;color:#9a3412}
+.badge-err  {background:#fff1f2;color:#9f1239}
+.badge-blue {background:#eff6ff;color:#1d4ed8}
+/* FILE UPLOAD ZONE */
+.upload-zone{border:2px dashed #cbd5e1;border-radius:14px;padding:32px;text-align:center;
+  cursor:pointer;background:#f8fafc;transition:border .15s,background .15s}
+.upload-zone:hover,.upload-zone.drag{border-color:#3b82f6;background:#eff6ff}
+.upload-zone h3{font-size:16px;font-weight:700;color:#334155;margin-bottom:6px}
+.upload-zone p{font-size:13px;color:#64748b}
+.upload-result{margin-top:14px;padding:14px;border-radius:10px;font-size:13px;display:none}
+.upload-result.ok  {background:#ecfdf5;border:1px solid #bbf7d0;color:#065f46}
+.upload-result.err {background:#fff1f2;border:1px solid #fecdd3;color:#9f1239}
+/* SECTION TITLE */
+.sec-title{font-size:18px;font-weight:800;margin-bottom:16px;color:#0f172a}
+.sec-sub{font-size:13px;color:#64748b;margin-bottom:16px;line-height:1.5}
+/* TOAST */
+#toast{position:fixed;bottom:24px;right:24px;background:#0f172a;color:#fff;
+  padding:12px 20px;border-radius:12px;font-size:14px;font-weight:600;
+  transform:translateY(80px);opacity:0;transition:all .3s;z-index:999}
+#toast.show{transform:translateY(0);opacity:1}
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav class="nav">
+  <div class="nav-brand">⚡ KRONOS <span>3.0</span></div>
+  <div class="nav-user" id="navUser" onclick="logout()">Cerrar sesión</div>
+</nav>
+
+<!-- TABS -->
+<div class="tabs">
+  <button class="tab active" onclick="showTab('dashboard')">📊 Dashboard</button>
+  <button class="tab" onclick="showTab('users')">👥 Colaboradores</button>
+  <button class="tab" onclick="showTab('import')">📥 Importar BUK</button>
+  <button class="tab" onclick="showTab('reports')">📈 Reportes</button>
+  <button class="tab" onclick="showTab('corrections')">✍ Novedades</button>
+  <button class="tab" onclick="showTab('alerts')">🔔 Alertas</button>
+  <button class="tab" onclick="showTab('config')">⚙ Configuración</button>
+</div>
+
+<!-- ═══════════ DASHBOARD ═══════════ -->
+<div class="panel active" id="tab-dashboard">
+  <div class="stats-grid" id="statsGrid">
+    <div class="stat-card blue"><div class="stat-num" id="s-present">--</div><div class="stat-lbl">En turno ahora</div></div>
+    <div class="stat-card red"><div class="stat-num" id="s-absent">--</div><div class="stat-lbl">Sin marcar hoy</div></div>
+    <div class="stat-card warn"><div class="stat-num" id="s-late">--</div><div class="stat-lbl">Tardanzas hoy</div></div>
+    <div class="stat-card red"><div class="stat-num" id="s-anomalies">--</div><div class="stat-lbl">Alertas activas</div></div>
+    <div class="stat-card green"><div class="stat-num" id="s-total">--</div><div class="stat-lbl">Total colaboradores</div></div>
+  </div>
+
+  <div style="display:flex;gap:12px;align-items:center;margin-bottom:12px;flex-wrap:wrap">
+    <div class="field" style="flex:1;min-width:140px">
+      <label>Fecha</label>
+      <input type="date" id="dash-date">
+    </div>
+    <div class="field" style="flex:1;min-width:140px">
+      <label>Área / Ecosistema</label>
+      <select id="dash-area"><option value="">Todas las áreas</option></select>
+    </div>
+    <button class="btn btn-primary" style="margin-top:18px" onclick="loadDashboard()">Actualizar</button>
+    <button class="btn btn-neutral" style="margin-top:18px" onclick="exportDailyXLSX()">⬇ Excel</button>
+  </div>
+
+  <div class="table-wrap">
+    <table id="dashTable">
+      <thead><tr>
+        <th>Colaborador</th><th>Área</th><th>Entrada</th><th>Salida</th>
+        <th>Tardanza</th><th>Horas</th><th>Estado</th><th>Alertas</th>
+      </tr></thead>
+      <tbody id="dashBody"><tr><td colspan="8" style="text-align:center;color:#94a3b8;padding:24px">Selecciona una fecha y presiona Actualizar</td></tr></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ═══════════ COLABORADORES ═══════════ -->
+<div class="panel" id="tab-users">
+  <div class="sec-title">Gestión de colaboradores</div>
+  <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px">
+    <div class="field" style="flex:2;min-width:200px">
+      <label>Buscar</label>
+      <input type="text" id="userSearch" placeholder="Nombre o cédula..." oninput="searchUsers()">
+    </div>
+    <div class="field" style="flex:1;min-width:140px">
+      <label>Área</label>
+      <select id="userAreaFilter" onchange="searchUsers()"><option value="">Todas</option></select>
+    </div>
+    <div class="field" style="flex:1;min-width:120px">
+      <label>Estado</label>
+      <select id="userStatusFilter" onchange="searchUsers()">
+        <option value="active">Activos</option>
+        <option value="">Todos</option>
+        <option value="inactive">Inactivos</option>
+      </select>
+    </div>
+    <button class="btn btn-primary" style="margin-top:18px" onclick="openCreateUser()">+ Nuevo</button>
+  </div>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Cédula</th><th>Nombre</th><th>Área</th><th>Cargo</th><th>Turno</th><th>Estado</th><th>Acciones</th></tr></thead>
+      <tbody id="usersBody"><tr><td colspan="7" style="text-align:center;color:#94a3b8;padding:24px">Cargando...</td></tr></tbody>
+    </table>
+  </div>
+  <div id="userPager" style="display:flex;gap:8px;margin-top:12px;justify-content:center"></div>
+</div>
+
+<!-- ═══════════ IMPORTAR BUK ═══════════ -->
+<div class="panel" id="tab-import">
+  <div class="sec-title">Importar colaboradores desde BUK</div>
+  <div class="sec-sub">
+    Sube el archivo Excel (.xlsx) que descargas de BUK → Nómina → Exportar colaboradores.<br>
+    El sistema detecta automáticamente las columnas: Cédula, Nombres, Apellidos, Cargo, Área/Departamento, Email, Supervisor, Centro de costo.<br>
+    Los colaboradores existentes se actualizarán. Los nuevos se crearán con contraseña: <strong>cédula + K!</strong> (ej: 1234567890K!)
+  </div>
+
+  <div class="upload-zone" id="dropZone" onclick="document.getElementById('bukFile').click()"
+       ondragover="event.preventDefault();this.classList.add('drag')"
+       ondragleave="this.classList.remove('drag')"
+       ondrop="handleDrop(event)">
+    <h3>📂 Arrastra el archivo aquí o haz clic para seleccionar</h3>
+    <p>Formatos soportados: .xlsx, .xls, .csv — Máx 10 MB</p>
+    <input type="file" id="bukFile" accept=".xlsx,.xls,.csv" style="display:none" onchange="handleFile(this.files[0])">
+  </div>
+
+  <div id="uploadResult" class="upload-result"></div>
+
+  <div style="margin-top:16px;padding:14px;background:#fff1f2;border:1px solid #fecdd3;border-radius:10px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
+    <div>
+      <div style="font-size:13px;font-weight:700;color:#9f1239">Datos incorrectos en la importacion</div>
+      <div style="font-size:12px;color:#be123c;margin-top:3px">Borra todos los colaboradores y vuelve a importar el archivo correcto de BUK. Los admins NO se borran.</div>
+    </div>
+    <button class="btn btn-danger btn-sm" onclick="borrarTodosColaboradores()">🗑 Borrar todos los colaboradores</button>
+  </div>
+
+  <div style="margin-top:24px">
+    <div class="sec-title" style="font-size:15px">Historial de importaciones</div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Fecha</th><th>Archivo</th><th>Total</th><th>Creados</th><th>Actualizados</th><th>Errores</th><th>Por</th></tr></thead>
+        <tbody id="importHistory"><tr><td colspan="7" style="text-align:center;color:#94a3b8;padding:16px">Cargando...</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════ REPORTES ═══════════ -->
+<div class="panel" id="tab-reports">
+  <div class="sec-title">Reportes y nómina</div>
+  <div class="form-row">
+    <div class="field">
+      <label>Fecha inicio</label>
+      <input type="date" id="rep-start">
+    </div>
+    <div class="field">
+      <label>Fecha fin</label>
+      <input type="date" id="rep-end">
+    </div>
+    <div class="field">
+      <label>Área / Ecosistema</label>
+      <select id="rep-area"><option value="">Todas</option></select>
+    </div>
+    <div class="field">
+      <label>Colaborador (cédula)</label>
+      <input type="text" id="rep-employee" placeholder="Opcional">
+    </div>
+  </div>
+  <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px">
+    <button class="btn btn-primary" onclick="loadRangeReport()">Ver reporte</button>
+    <button class="btn btn-success" onclick="exportReport('xlsx')">⬇ Exportar Excel (nómina)</button>
+    <button class="btn btn-neutral" onclick="loadMensual()">📅 Generar mensual (1→30)</button>
+  </div>
+
+  <div id="repSummaryGrid" style="display:none">
+    <div class="sec-title" style="font-size:15px;margin-bottom:10px">Resumen por colaborador</div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr>
+          <th>Cédula</th><th>Nombre</th><th>Área</th><th>Días</th><th>Ausencias</th>
+          <th>Horas</th><th>HED</th><th>HEN</th><th>HEDF</th><th>Tardanza(min)</th>
+        </tr></thead>
+        <tbody id="repBody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════ NOVEDADES ═══════════ -->
+<div class="panel" id="tab-corrections">
+  <div class="sec-title">Correcciones y novedades pendientes</div>
+  <div style="display:flex;gap:10px;margin-bottom:12px;flex-wrap:wrap">
+    <button class="btn btn-primary btn-sm" onclick="loadCorrections('pending')">⏳ Pendientes</button>
+    <button class="btn btn-neutral btn-sm" onclick="loadCorrections('approved')">✅ Aprobadas</button>
+    <button class="btn btn-neutral btn-sm" onclick="loadCorrections('executed')">✔ Ejecutadas</button>
+    <button class="btn btn-neutral btn-sm" onclick="loadCorrections('')">Todas</button>
+  </div>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Colaborador</th><th>Área</th><th>Fecha</th><th>Tipo</th><th>Motivo</th><th>Solicitado</th><th>Estado</th><th>Acción</th></tr></thead>
+      <tbody id="corrBody"><tr><td colspan="8" style="text-align:center;color:#94a3b8;padding:24px">Cargando...</td></tr></tbody>
+    </table>
+  </div>
+</div>
+
+
+<!-- ALERTAS -->
+<div class="panel" id="tab-alerts">
+  <div class="sec-title">Alertas de jornada abierta</div>
+  <div class="sec-sub">Detecta colaboradores que llevan mas horas de las normales sin cerrar su jornada.</div>
+  <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px;align-items:flex-end">
+    <div class="field">
+      <label>Umbral de horas</label>
+      <input type="number" id="alert-hours" value="10" min="1" max="24" style="width:100px">
+    </div>
+    <div class="field" style="flex:1;min-width:140px">
+      <label>Area</label>
+      <select id="alert-area"><option value="">Todas</option></select>
+    </div>
+    <button class="btn btn-primary" onclick="loadAlerts()">🔍 Consultar</button>
+    <button class="btn btn-danger" onclick="sendAlertEmails()" id="btnSendAlerts" style="display:none">📧 Enviar alertas por email</button>
+  </div>
+  <div id="alertSummary" style="margin-bottom:12px;font-size:13px;color:#64748b"></div>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Colaborador</th><th>Area</th><th>Cargo</th><th>Lider</th><th>Entrada</th><th>Ubicacion entrada</th><th>IP</th><th>Horas activo</th></tr></thead>
+      <tbody id="alertsBody"><tr><td colspan="6" style="text-align:center;padding:20px;color:#94a3b8">Selecciona un umbral y consulta</td></tr></tbody>
+    </table>
+  </div>
+  <div style="margin-top:16px;padding:12px;background:#fff7ed;border:1px solid #fed7aa;border-radius:10px;font-size:13px;color:#9a3412">
+    <strong>Configurar alertas automaticas por email:</strong> Agrega la variable <code>SENDGRID_API_KEY</code> en las variables de entorno de Render y la variable <code>ALERT_FROM_EMAIL</code> con el email remitente. Las alertas se enviaran automaticamente a cada lider.
+  </div>
+</div>
+
+<!-- CONFIG AVANZADA -->
+<div class="panel" id="tab-config">
+  <div class="sec-title">Configuracion del sistema</div>
+  <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px">
+
+    <!-- Sedes -->
+    <div style="background:#fff;border-radius:14px;padding:20px;border:1px solid #e2e8f0">
+      <h3 style="font-size:14px;font-weight:800;margin-bottom:12px">📍 Sedes</h3>
+      <div id="sedesList" style="font-size:13px;color:#64748b;margin-bottom:12px">Cargando...</div>
+      <button class="btn btn-primary btn-sm" onclick="openAddSede()">+ Nueva sede</button>
+    </div>
+
+    <!-- Turnos -->
+    <div style="background:#fff;border-radius:14px;padding:20px;border:1px solid #e2e8f0">
+      <h3 style="font-size:14px;font-weight:800;margin-bottom:12px">⏱ Turnos</h3>
+      <div id="shiftsList" style="font-size:13px;color:#64748b;margin-bottom:12px">Cargando...</div>
+      <button class="btn btn-primary btn-sm" onclick="openAddShift()">+ Nuevo turno</button>
+    </div>
+
+    <!-- Configuracion por Area -->
+    <div style="background:#fff;border-radius:14px;padding:20px;border:1px solid #e2e8f0">
+      <h3 style="font-size:14px;font-weight:800;margin-bottom:12px">⚙ Config por area</h3>
+      <div class="field">
+        <label>Area a configurar</label>
+        <select id="cfgAreaSel"><option value="">Selecciona...</option></select>
+      </div>
+      <div class="field">
+        <label>Max turnos por dia</label>
+        <input type="number" id="cfgMaxTurns" value="1" min="1" max="5">
+      </div>
+      <div class="field">
+        <label>Horas minimas entre turnos</label>
+        <input type="number" id="cfgMinHours" value="1" min="0" step="0.5">
+      </div>
+      <label style="display:flex;gap:8px;align-items:center;margin-top:10px;font-size:13px">
+        <input type="checkbox" id="cfgGeoReq"> Geocerca obligatoria
+      </label>
+      <button class="btn btn-success btn-sm" style="margin-top:12px" onclick="saveAreaConfig()">Guardar config</button>
+    </div>
+
+    <!-- Cargos excluidos -->
+    <div style="background:#fff;border-radius:14px;padding:20px;border:1px solid #e2e8f0">
+      <h3 style="font-size:14px;font-weight:800;margin-bottom:12px">🚫 Cargos sin marcacion</h3>
+      <p style="font-size:12px;color:#64748b;margin-bottom:10px">Los colaboradores con estos cargos no apareceran en reportes de asistencia ni alertas.</p>
+      <div id="excludedRoles" style="font-size:13px;margin-bottom:10px">Cargando...</div>
+      <div style="display:flex;gap:8px">
+        <input type="text" id="newExcludedRole" placeholder="Cargo a excluir" style="flex:1;padding:8px;border:1px solid #e2e8f0;border-radius:8px;font-size:13px">
+        <button class="btn btn-danger btn-sm" onclick="addExcludedRole()">+ Excluir</button>
+      </div>
+    </div>
+
+    <!-- Ley 2101 -->
+    <div style="background:#eff6ff;border-radius:14px;padding:20px;border:1px solid #bfdbfe">
+      <h3 style="font-size:14px;font-weight:800;margin-bottom:8px;color:#1d4ed8">🇨🇴 Ley 2101/2021</h3>
+      <div style="font-size:12px;color:#1e40af;line-height:1.6">
+        <strong>Jornada maxima ordinaria:</strong><br>
+        Hoy (hasta 14/07/2026): <strong>44 h/semana</strong><br>
+        Desde 15/07/2026: <strong>42 h/semana</strong><br><br>
+        <strong>Recargos:</strong><br>
+        Nocturno (7pm-6am): +35% | Dominical: +90% (hoy)<br>
+        Festivo: +90% (hoy) | HED: +25% | HEN: +75%<br>
+        HEDF: +100% | HENDF: +150%
+      </div>
+    </div>
+  </div>
+</div>
+
+
+    <!-- Jornada máxima Colombia -->
+    <div style="background:#eff6ff;border-radius:14px;padding:20px;border:1px solid #bfdbfe">
+      <h3 style="font-size:14px;font-weight:800;margin-bottom:8px;color:#1d4ed8">🇨🇴 Ley 2101/2021</h3>
+      <div style="font-size:12px;color:#1e40af;line-height:1.6">
+        <strong>Jornada máxima ordinaria:</strong><br>
+        Hoy (hasta 14/07/2026): <strong>44 h/semana</strong><br>
+        Desde 15/07/2026: <strong>42 h/semana</strong><br><br>
+        <strong>Recargos activos:</strong><br>
+        Nocturno (7pm-6am): +35%<br>
+        Dominical: +90% (jul 2026 - jun 2027)<br>
+        Festivo: +90% | Desde jul 2027: +100%<br>
+        HED: +25% | HEN: +75%<br>
+        HEDF: +100% | HENDF: +150%
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════ TOAST ═══════════ -->
+<div id="toast"></div>
+
+<script>
+const API   = '';
+const token = localStorage.getItem('kr_token');
+const user  = JSON.parse(localStorage.getItem('kr_user')||'{}');
+if (!token) window.location.href = '/login.html';
+
+document.getElementById('navUser').textContent = `${user.full_name || 'Admin'} · Salir`;
+
+// Init
+const today = new Date().toISOString().substring(0,10);
+document.getElementById('dash-date').value = today;
+const firstDay = today.substring(0,8)+'01';
+document.getElementById('rep-start').value = firstDay;
+document.getElementById('rep-end').value   = today;
+
+loadAreas();
+loadDashboard();
+loadImportHistory();
+loadCorrections('pending');
+loadSedesConfig();
+loadShiftsConfig();
+loadAreaConfig();
+loadExcludedRoles();
+// Poblar select de alertas
+api('/api/areas').then(r=>r.json()).then(d=>{
+  const sel=document.getElementById('alert-area');
+  if(sel)(d.areas||[]).forEach(a=>{const o=document.createElement('option');o.value=a.name;o.textContent=a.name;sel.appendChild(o);});
+});
+
+// ─────────────────────── HELPERS ───────────────────────
+function h(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
+function api(path,opts={}){
+  return fetch(API+path,{...opts,headers:{...(opts.headers||{}),Authorization:`Bearer ${token}`,'Content-Type':'application/json'}});
+}
+function toast(msg,ok=true){
+  const el=document.getElementById('toast');
+  el.textContent=msg; el.className='show';
+  el.style.background=ok?'#0f172a':'#9f1239';
+  setTimeout(()=>el.className='',3000);
+}
+function showTab(id){
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  const tabs=['dashboard','users','import','reports','corrections','alerts','config'];
+  const idx=tabs.indexOf(id);
+  if(idx>=0) document.querySelectorAll('.tab')[idx]?.classList.add('active');
+  const panel=document.getElementById('tab-'+id);
+  if(panel) panel.classList.add('active');
+}
+function fmt(dt){if(!dt)return '--'; return new Date(dt).toLocaleTimeString('es-CO',{hour:'2-digit',minute:'2-digit',timeZone:'America/Bogota'});}
+function fmtDate(d){if(!d)return '--'; return new Date(d+'T12:00:00').toLocaleDateString('es-CO');}
+
+// ─────────────────────── AREAS ───────────────────────
+async function loadAreas(){
+  const res=await api('/api/areas'); const d=await res.json();
+  const opts=(d.areas||[]).map(a=>`<option value="${h(a.name)}">${h(a.name)}</option>`).join('');
+  ['dash-area','userAreaFilter','rep-area'].forEach(id=>{
+    const el=document.getElementById(id); if(el) el.innerHTML=el.innerHTML.split('<option')[0]+'<option value="">Todas</option>'+opts;
+  });
+}
+
+// ─────────────────────── DASHBOARD ───────────────────────
+async function loadDashboard(){
+  const date=document.getElementById('dash-date').value;
+  const area=document.getElementById('dash-area').value;
+  const tbody=document.getElementById('dashBody');
+  tbody.innerHTML='<tr><td colspan="8" style="text-align:center;padding:20px;color:#94a3b8">Cargando...</td></tr>';
+
+  const res=await api(`/api/reports/daily?date=${date}&area=${encodeURIComponent(area)}`);
+  const d=await res.json();
+  if(!d.ok){tbody.innerHTML=`<tr><td colspan="8" style="color:#ef4444;padding:16px">${h(d.message)}</td></tr>`;return;}
+
+  // Stats
+  document.getElementById('s-present').textContent=d.summary.in_session;
+  document.getElementById('s-absent').textContent=d.summary.absent;
+  document.getElementById('s-late').textContent=d.summary.late;
+  document.getElementById('s-anomalies').textContent=d.summary.anomalies;
+  document.getElementById('s-total').textContent=d.summary.total;
+
+  tbody.innerHTML=d.records.map(r=>{
+    const flags=(r.anomaly_flags||[]);
+    const statusBadge=r.session_status==='closed'?'badge-ok':r.session_status==='open'?'badge-blue':'badge-warn';
+    return `<tr>
+      <td><strong>${h(r.full_name)}</strong><br><span style="font-size:11px;color:#94a3b8">${h(r.employee_id)}</span></td>
+      <td>${h(r.area||'--')}</td>
+      <td>${fmt(r.entry_time)}</td>
+      <td>${fmt(r.exit_time)}</td>
+      <td>${r.late_minutes>0?`<span class="badge badge-warn">${r.late_minutes} min</span>`:'--'}</td>
+      <td>${r.total_hours||'--'}</td>
+      <td><span class="badge ${statusBadge}">${r.session_status||'sin marcar'}</span></td>
+      <td style="font-size:11px;color:#ef4444">${flags.length?flags.join(', '):''}</td>
+    </tr>`;
+  }).join('') || '<tr><td colspan="8" style="text-align:center;padding:20px;color:#94a3b8">Sin registros para esta fecha</td></tr>';
+}
+
+// Helper: generar link de Google Maps desde coordenadas
+function mapsLink(lat, lon) {
+  if (!lat || !lon) return '--';
+  const url = 'https://maps.google.com/?q=' + lat + ',' + lon;
+  return '<a href="' + url + '" target="_blank" style="color:#3b82f6;font-size:11px">📍 Ver en Maps</a>';
+}
+}
+
+async function exportDailyXLSX(){
+  const date=document.getElementById('dash-date').value;
+  const area=document.getElementById('dash-area').value;
+  window.open(`${API}/api/reports/range?start=${date}&end=${date}&area=${encodeURIComponent(area)}&format=xlsx&token=${token}`,'_blank');
+}
+
+// ─────────────────────── USERS ───────────────────────
+let userPage=1;
+async function searchUsers(){userPage=1;loadUsers();}
+async function loadUsers(){
+  const search=document.getElementById('userSearch').value;
+  const area=document.getElementById('userAreaFilter').value;
+  const status=document.getElementById('userStatusFilter').value;
+  const tbody=document.getElementById('usersBody');
+  tbody.innerHTML='<tr><td colspan="7" style="text-align:center;padding:20px;color:#94a3b8">Cargando...</td></tr>';
+
+  const res=await api(`/api/users?search=${encodeURIComponent(search)}&area=${encodeURIComponent(area)}&status=${status}&page=${userPage}&limit=30`);
+  const d=await res.json();
+  if(!d.ok){tbody.innerHTML=`<tr><td colspan="7" style="padding:16px;color:#ef4444">${h(d.message)}</td></tr>`;return;}
+
+  tbody.innerHTML=d.users.map(u=>`<tr>
+    <td><code style="font-size:12px">${h(u.employee_id)}</code></td>
+    <td><strong>${h(u.full_name)}</strong></td>
+    <td>${h(u.area||'--')}</td>
+    <td style="font-size:12px;color:#64748b">${h(u.cargo||'--')}</td>
+    <td style="font-size:12px">${h(u.shift||'--')}</td>
+    <td><span class="badge ${u.status==='active'?'badge-ok':'badge-err'}">${u.status}</span></td>
+    <td style="display:flex;gap:6px">
+      <button class="btn btn-primary btn-sm" onclick="editUser('${u.id}')">✏</button>
+      ${u.role !== 'employee' ? `<button class="btn btn-neutral btn-sm" onclick="resetPass('${u.id}','${h(u.full_name)}')">🔑</button>` : ''}
+      <button class="btn btn-danger btn-sm" onclick="deleteUser('${u.id}','${h(u.full_name)}')">🗑</button>
+    </td>
+  </tr>`).join('') || '<tr><td colspan="7" style="text-align:center;padding:20px;color:#94a3b8">Sin resultados</td></tr>';
+}
+loadUsers();
+
+async function resetPass(id,name){
+  if(!confirm(`¿Restablecer contraseña de ${name}? La nueva será: cédula + K!`)) return;
+  const res=await api(`/api/users/reset-password/${id}`,{method:'POST'});
+  const d=await res.json();
+  toast(d.message, d.ok);
+}
+
+function openCreateUser(){
+  const name=prompt('Nombre completo:'); if(!name) return;
+  const empId=prompt('Cédula / ID:'); if(!empId) return;
+  const cargo=prompt('Cargo:');
+  const area=prompt('Área (ej: Instalaciones):');
+  createUser({full_name:name, employee_id:empId, cargo, area_name:area});
+}
+
+async function createUser(data){
+  const res=await api('/api/users',{method:'POST',body:JSON.stringify(data)});
+  const d=await res.json();
+  toast(d.message, d.ok);
+  if(d.ok) loadUsers();
+}
+
+async function editUser(id){
+  const res=await api(`/api/users/${id}`);
+  const d=await res.json();
+  if(!d.ok){toast(d.message,false);return;}
+  const u=d.user;
+  const newName=prompt('Nombre completo:',u.full_name); if(!newName) return;
+  const newCargo=prompt('Cargo:',u.cargo||'');
+  const newArea=prompt('Área:',u.area||'');
+  const newStatus=prompt('Estado (active/inactive/suspended):',u.status);
+
+  const res2=await api(`/api/users/${id}`,{method:'PUT',body:JSON.stringify({
+    full_name:newName, cargo:newCargo, area_name:newArea,
+    status:newStatus, role:u.role, email:u.email
+  })});
+  const d2=await res2.json();
+  toast(d2.message, d2.ok);
+  if(d2.ok) loadUsers();
+}
+
+// ─────────────────────── IMPORT BUK ───────────────────────
+function handleDrop(e){
+  e.preventDefault();
+  document.getElementById('dropZone').classList.remove('drag');
+  const file=e.dataTransfer.files[0];
+  if(file) handleFile(file);
+}
+
+async function handleFile(file){
+  if(!file) return;
+  document.getElementById('dropZone').querySelector('h3').textContent=`📄 ${file.name}`;
+  const resultEl=document.getElementById('uploadResult');
+  resultEl.style.display='none';
+
+  const formData=new FormData();
+  formData.append('file',file);
+
+  resultEl.style.display='block';
+  resultEl.className='upload-result';
+  resultEl.textContent='⏳ Procesando archivo...';
+
+  try {
+    const res=await fetch(`${API}/api/users/import/buk`,{
+      method:'POST',
+      headers:{Authorization:`Bearer ${token}`},
+      body:formData
+    });
+    const d=await res.json();
+    resultEl.className=`upload-result ${d.ok?'ok':'err'}`;
+    let txt=d.message;
+    if(d.results?.errors?.length){
+      txt+='\n\nErrores:\n'+d.results.errors.slice(0,5).map(e=>`Fila ${e.row}: ${e.error}`).join('\n');
+    }
+    resultEl.textContent=txt;
+    if(d.ok){loadImportHistory();loadUsers();}
+  } catch(e){
+    resultEl.className='upload-result err';
+    resultEl.textContent='Error de conexión al subir el archivo.';
+  }
+}
+
+async function loadImportHistory(){
+  const res=await api('/api/users/import/history');
+  const d=await res.json();
+  const tbody=document.getElementById('importHistory');
+  if(!d.ok||!d.imports.length){
+    tbody.innerHTML='<tr><td colspan="7" style="text-align:center;padding:16px;color:#94a3b8">Sin importaciones previas</td></tr>';
+    return;
+  }
+  tbody.innerHTML=d.imports.map(i=>`<tr>
+    <td style="font-size:12px">${new Date(i.created_at).toLocaleString('es-CO',{timeZone:'America/Bogota'})}</td>
+    <td style="font-size:12px">${h(i.filename)}</td>
+    <td>${i.total_rows}</td>
+    <td style="color:#10b981;font-weight:700">${i.created_rows}</td>
+    <td style="color:#3b82f6;font-weight:700">${i.updated_rows}</td>
+    <td style="${i.error_rows>0?'color:#ef4444;font-weight:700':''}">${i.error_rows}</td>
+    <td style="font-size:12px">${h(i.imported_by_name||'--')}</td>
+  </tr>`).join('');
+}
+
+// ─────────────────────── REPORTS ───────────────────────
+async function loadRangeReport(){
+  const start=document.getElementById('rep-start').value;
+  const end=document.getElementById('rep-end').value;
+  const area=document.getElementById('rep-area').value;
+  const emp=document.getElementById('rep-employee').value;
+  if(!start||!end){toast('Selecciona fechas',false);return;}
+
+  const res=await api(`/api/reports/range?start=${start}&end=${end}&area=${encodeURIComponent(area)}&employee_id=${emp}`);
+  const d=await res.json();
+  if(!d.ok){toast(d.message,false);return;}
+
+  document.getElementById('repSummaryGrid').style.display='block';
+  document.getElementById('repBody').innerHTML=d.summary.map(e=>`<tr>
+    <td><code style="font-size:12px">${h(e.employee_id)}</code></td>
+    <td>${h(e.full_name)}</td>
+    <td>${h(e.area||'--')}</td>
+    <td>${e.days_worked}</td>
+    <td style="${e.absences>0?'color:#ef4444;font-weight:700':''}">${e.absences}</td>
+    <td>${e.total_worked_hours}</td>
+    <td>${e.overtime_hed}</td>
+    <td>${e.overtime_hen}</td>
+    <td>${e.overtime_hedf}</td>
+    <td style="${e.late_minutes_total>0?'color:#f59e0b;font-weight:700':''}">${e.late_minutes_total}</td>
+  </tr>`).join('') || '<tr><td colspan="10" style="text-align:center;padding:16px;color:#94a3b8">Sin datos</td></tr>';
+  toast(`Reporte generado: ${d.total_employees} colaboradores`);
+}
+
+async function exportReport(){
+  const start=document.getElementById('rep-start').value;
+  const end=document.getElementById('rep-end').value;
+  const area=document.getElementById('rep-area').value;
+  const emp=document.getElementById('rep-employee').value;
+  if(!start||!end){toast('Selecciona fechas',false);return;}
+  window.location.href=`${API}/api/reports/range?start=${start}&end=${end}&area=${encodeURIComponent(area)}&employee_id=${emp}&format=xlsx`;
+}
+
+function loadMensual(){
+  const now = new Date();
+  const y = prompt('Año:', now.getFullYear()); if(!y) return;
+  const m = prompt('Mes (1-12):', now.getMonth()+1); if(!m) return;
+  const mi = parseInt(m), yi = parseInt(y);
+  // Primer día del mes
+  const d1 = `${yi}-${String(mi).padStart(2,'0')}-01`;
+  // Último día del mes (0 del mes siguiente = último del mes actual)
+  const lastDay = new Date(yi, mi, 0).getDate();
+  const d2 = `${yi}-${String(mi).padStart(2,'0')}-${lastDay}`;
+  document.getElementById('rep-start').value = d1;
+  document.getElementById('rep-end').value   = d2;
+  loadRangeReport();
+}
+// Alias por compatibilidad
+function loadQuincena(){ loadMensual(); }
+
+// ─────────────────────── CORRECTIONS ───────────────────────
+async function loadCorrections(status='pending'){
+  const tbody=document.getElementById('corrBody');
+  tbody.innerHTML='<tr><td colspan="8" style="text-align:center;padding:20px;color:#94a3b8">Cargando...</td></tr>';
+  const res=await api(`/api/corrections?status=${status}`);
+  const d=await res.json();
+  if(!d.ok){tbody.innerHTML='<tr><td colspan="8" style="padding:16px;color:#ef4444">Error</td></tr>';return;}
+
+  tbody.innerHTML=d.corrections.map(c=>{
+    const badges={'pending':'badge-warn','approved':'badge-blue','rejected':'badge-err','executed':'badge-ok'};
+    const actions=c.status==='pending'
+      ?`<button class="btn btn-success btn-sm" onclick="approveCorr('${c.id}')">✅ Aprobar</button>
+         <button class="btn btn-danger btn-sm" onclick="rejectCorr('${c.id}')">❌ Rechazar</button>`
+      :c.status==='approved'
+      ?`<button class="btn btn-primary btn-sm" onclick="executeCorr('${c.id}')">▶ Ejecutar</button>`:'';
+    return `<tr>
+      <td><strong>${h(c.target_name)}</strong><br><span style="font-size:11px;color:#94a3b8">${h(c.target_emp_id)}</span></td>
+      <td style="font-size:12px">${h(c.target_area||'--')}</td>
+      <td style="font-size:12px">${fmtDate(c.session_date)}</td>
+      <td style="font-size:12px">${h(c.type)}</td>
+      <td style="font-size:12px;max-width:180px">${h(c.reason)}</td>
+      <td style="font-size:11px;color:#64748b">${new Date(c.created_at).toLocaleString('es-CO',{timeZone:'America/Bogota'})}</td>
+      <td><span class="badge ${badges[c.status]||''}">${c.status}</span></td>
+      <td style="display:flex;gap:6px;flex-wrap:wrap">${actions}</td>
+    </tr>`;
+  }).join('')||'<tr><td colspan="8" style="text-align:center;padding:20px;color:#94a3b8">Sin novedades</td></tr>';
+}
+
+async function approveCorr(id){
+  const comment=prompt('Comentario (opcional):');
+  const res=await api(`/api/corrections/${id}/approve`,{method:'PUT',body:JSON.stringify({comment})});
+  const d=await res.json(); toast(d.message,d.ok); if(d.ok)loadCorrections('pending');
+}
+async function rejectCorr(id){
+  const comment=prompt('Motivo del rechazo (obligatorio):'); if(!comment)return;
+  const res=await api(`/api/corrections/${id}/reject`,{method:'PUT',body:JSON.stringify({comment})});
+  const d=await res.json(); toast(d.message,d.ok); if(d.ok)loadCorrections('pending');
+}
+async function executeCorr(id){
+  if(!confirm('¿Ejecutar esta corrección? El cambio quedará en auditoría.'))return;
+  const res=await api(`/api/corrections/${id}/execute`,{method:'PUT',body:JSON.stringify({})});
+  const d=await res.json(); toast(d.message,d.ok); if(d.ok)loadCorrections('approved');
+}
+
+// ─────────────────────── CONFIG ───────────────────────
+async function loadSedesConfig(){
+  const res=await api('/api/sedes'); const d=await res.json();
+  document.getElementById('sedesList').innerHTML=(d.sedes||[]).map(s=>
+    `<div style="padding:6px 0;border-bottom:1px solid #f1f5f9">
+      <strong>${h(s.name)}</strong><br>
+      <span style="font-size:11px;color:#94a3b8">${s.lat?`${s.lat}, ${s.lon} — r:${s.radius_meters}m`:'Sin geocerca'}</span>
+    </div>`
+  ).join('') || '<span>Sin sedes configuradas</span>';
+}
+
+async function loadShiftsConfig(){
+  const res=await api('/api/shifts'); const d=await res.json();
+  document.getElementById('shiftsList').innerHTML=(d.shifts||[]).map(s=>
+    `<div style="padding:6px 0;border-bottom:1px solid #f1f5f9">
+      <strong>${h(s.name)}</strong> — ${s.start_time} → ${s.end_time}
+    </div>`
+  ).join('')||'<span>Sin turnos configurados</span>';
+}
+
+function openAddSede(){
+  const name=prompt('Nombre de la sede:'); if(!name) return;
+  const lat=prompt('Latitud (ej: 4.7110):');
+  const lon=prompt('Longitud (ej: -74.0721):');
+  const r=prompt('Radio geocerca en metros (ej: 300):','300');
+  api('/api/sedes',{method:'POST',body:JSON.stringify({name,lat:parseFloat(lat)||null,lon:parseFloat(lon)||null,radius_meters:parseInt(r)||300})})
+    .then(r=>r.json()).then(d=>{toast(d.ok?`Sede "${name}" creada`:d.message,d.ok);if(d.ok)loadSedesConfig();});
+}
+
+function openAddShift(){
+  const name=prompt('Nombre del turno:'); if(!name) return;
+  const start=prompt('Hora inicio (HH:MM):','08:00');
+  const end=prompt('Hora fin (HH:MM):','17:00');
+  const tol=prompt('Tolerancia entrada (minutos):','5');
+  api('/api/shifts',{method:'POST',body:JSON.stringify({name,start_time:start,end_time:end,tolerance_in_min:parseInt(tol)||5})})
+    .then(r=>r.json()).then(d=>{toast(d.ok?`Turno "${name}" creado`:d.message,d.ok);if(d.ok)loadShiftsConfig();});
+}
+
+
+// ─────────────────────── ALERTAS ───────────────────────
+async function loadAlerts() {
+  const hours = document.getElementById('alert-hours').value || 10;
+  const area  = document.getElementById('alert-area').value;
+  const tbody = document.getElementById('alertsBody');
+  const summary = document.getElementById('alertSummary');
+  tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:16px;color:#94a3b8">Consultando...</td></tr>';
+
+  const res = await api(`/api/alerts/open-sessions?hours=${hours}&area=${encodeURIComponent(area)}`);
+  const d = await res.json();
+  if (!d.ok) { toast(d.message, false); return; }
+
+  const btn = document.getElementById('btnSendAlerts');
+  btn.style.display = d.total > 0 ? 'block' : 'none';
+
+  summary.textContent = d.total > 0
+    ? `⚠️ ${d.total} colaborador(es) llevan mas de ${hours}h con jornada abierta.`
+    : `✅ Ningún colaborador supera las ${hours}h activo.`;
+
+  if (!d.records.length) {
+    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:16px;color:#10b981">Sin alertas activas</td></tr>';
+    return;
+  }
+  tbody.innerHTML = d.records.map(r => `<tr>
+    <td><strong>${h(r.full_name)}</strong><br><span style="font-size:11px;color:#94a3b8">${h(r.employee_id)}</span></td>
+    <td>${h(r.area||'--')}</td>
+    <td style="font-size:12px">${h(r.cargo||'--')}</td>
+    <td style="font-size:12px">${h(r.leader_name||'--')}</td>
+    <td style="font-size:12px">${r.entry_time ? new Date(r.entry_time).toLocaleTimeString('es-CO',{hour:'2-digit',minute:'2-digit',timeZone:'America/Bogota'}) : '--'}</td>
+    <td>${mapsLink(r.entry_lat, r.entry_lon)}</td>
+    <td style="font-size:11px;color:#64748b">${r.entry_ip||'--'}</td>
+    <td><span style="font-weight:700;color:${r.hours_open>12?'#ef4444':'#f59e0b'}">${r.hours_open}h</span></td>
+  </tr>`).join('');
+}
+
+async function sendAlertEmails() {
+  const hours = document.getElementById('alert-hours').value || 10;
+  const area  = document.getElementById('alert-area').value;
+  if (!confirm(`Enviar alertas por email a los lideres de equipos con jornadas > ${hours}h abiertas?`)) return;
+  const res = await api('/api/alerts/send-email', {method:'POST', body:JSON.stringify({hours:parseFloat(hours), area:area||null})});
+  const d = await res.json();
+  toast(d.message, d.ok);
+}
+
+// ─────────────────────── CONFIG AREAS ───────────────────────
+async function loadAreaConfig() {
+  const res = await api('/api/areas');
+  const d = await res.json();
+  const sel = document.getElementById('cfgAreaSel');
+  if (!sel) return;
+  sel.innerHTML = '<option value="">Selecciona...</option>';
+  (d.areas||[]).forEach(a => {
+    const opt = document.createElement('option');
+    opt.value = a.id;
+    opt.textContent = a.name;
+    opt.dataset.maxTurns = a.max_turns || 1;
+    opt.dataset.minHours = a.min_hours_between || 1;
+    opt.dataset.geoReq   = a.geo_required_override || false;
+    sel.appendChild(opt);
+  });
+  sel.onchange = function() {
+    const opt = sel.options[sel.selectedIndex];
+    document.getElementById('cfgMaxTurns').value = opt.dataset.maxTurns || 1;
+    document.getElementById('cfgMinHours').value  = opt.dataset.minHours || 1;
+    document.getElementById('cfgGeoReq').checked  = opt.dataset.geoReq === 'true';
+  };
+}
+
+async function saveAreaConfig() {
+  const areaId = document.getElementById('cfgAreaSel').value;
+  if (!areaId) { toast('Selecciona un area', false); return; }
+  const res = await api(`/api/areas/${areaId}/settings`, {method:'PUT', body:JSON.stringify({
+    max_turns: parseInt(document.getElementById('cfgMaxTurns').value) || 1,
+    min_hours_between: parseFloat(document.getElementById('cfgMinHours').value) || 1,
+    geo_required_override: document.getElementById('cfgGeoReq').checked
+  })});
+  const d = await res.json();
+  toast(d.message, d.ok);
+  if (d.ok) loadAreaConfig();
+}
+
+// ─────────────────────── CARGOS EXCLUIDOS ───────────────────────
+async function loadExcludedRoles() {
+  const res = await api('/api/areas/excluded-roles');
+  const d = await res.json();
+  const el = document.getElementById('excludedRoles');
+  if (!el) return;
+  if (!d.roles || !d.roles.length) {
+    el.innerHTML = '<span style="color:#94a3b8">Sin cargos excluidos</span>';
+    return;
+  }
+  el.innerHTML = d.roles.map(r => `
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid #f1f5f9">
+      <span style="font-size:13px">${h(r.cargo)}</span>
+      <button class="btn btn-danger btn-sm" onclick="removeExcludedRole('${encodeURIComponent(r.cargo)}')">✕</button>
+    </div>`).join('');
+}
+
+async function addExcludedRole() {
+  const cargo = document.getElementById('newExcludedRole').value.trim();
+  if (!cargo) { toast('Escribe el cargo a excluir', false); return; }
+  if (!confirm(`Excluir el cargo "${cargo}" de marcacion? Los colaboradores con este cargo no apareceran en reportes ni alertas.`)) return;
+  const res = await api('/api/areas/excluded-roles', {method:'POST', body:JSON.stringify({cargo})});
+  const d = await res.json();
+  toast(d.message, d.ok);
+  if (d.ok) { document.getElementById('newExcludedRole').value = ''; loadExcludedRoles(); }
+}
+
+async function removeExcludedRole(cargo) {
+  if (!confirm('Quitar la exclusion de este cargo?')) return;
+  const res = await api(`/api/areas/excluded-roles/${cargo}`, {method:'DELETE'});
+  const d = await res.json();
+  toast(d.message, d.ok);
+  if (d.ok) loadExcludedRoles();
+}
+
+async function deleteUser(id, name) {
+  if (!confirm('Borra

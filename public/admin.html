@@ -502,6 +502,7 @@ async function loadUsers(){
     <td style="display:flex;gap:6px">
       <button class="btn btn-primary btn-sm" onclick="editUser('${u.id}')">✏</button>
       <button class="btn btn-neutral btn-sm" onclick="resetPass('${u.id}','${h(u.full_name)}')">🔑</button>
+      <button class="btn btn-danger btn-sm" onclick="deleteUser('${u.id}','${h(u.full_name)}')">🗑</button>
     </td>
   </tr>`).join('') || '<tr><td colspan="7" style="text-align:center;padding:20px;color:#94a3b8">Sin resultados</td></tr>';
 }
@@ -859,19 +860,14 @@ async function removeExcludedRole(cargo) {
   if (d.ok) loadExcludedRoles();
 }
 
-async function borrarTodosColaboradores() {
-  if (!confirm('ATENCION: Se borraran TODOS los colaboradores (role=employee) y sus marcaciones.\n\nLos administradores y lideres NO se borran.\n\n¿Estas seguro?')) return;
-  if (!confirm('Confirma de nuevo: borrar todos los colaboradores importados. No se puede deshacer.')) return;
-  const res = await api('/api/users/bulk-delete', {method:'DELETE', body:JSON.stringify({confirm:'CONFIRMAR_BORRADO'})});
+async function deleteUser(id, name) {
+  if (!confirm('Borrar a ' + name + '?\n\nSe eliminaran todas sus marcaciones y registros.\nEsta accion no se puede deshacer.')) return;
+  const res = await api('/api/users/' + id, {method:'DELETE'});
   const d = await res.json();
   toast(d.message, d.ok);
-  if (d.ok) { loadUsers(); loadImportHistory(); }
+  if (d.ok) loadUsers();
 }
 
-function logout(){
-  localStorage.removeItem('kr_token'); localStorage.removeItem('kr_user');
-  window.location.href='/login.html';
-}
-</script>
-</body>
-</html>
+async function borrarTodosColaboradores() {
+  if (!confirm('ATENCION: Se borraran TODOS los colaboradores (role=employee) y sus marcaciones.\n\nLos administradores y lideres NO se borran.\n\n¿Estas seguro?')) return;
+  if (!confirm('Confirma de nuevo: borrar todos los colaboradores imp

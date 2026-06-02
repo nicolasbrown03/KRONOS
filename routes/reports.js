@@ -74,7 +74,8 @@ router.get('/range', requireAuth, requireRole('super_admin','admin','leader'), a
               e.marked_at AS entry_time, x.marked_at AS exit_time,
               lo.marked_at AS lunch_out, li.marked_at AS lunch_in,
               sess.late_minutes, sess.total_hours, sess.overtime_hours,
-              sess.status AS session_status, e.anomaly_flags
+              sess.status AS session_status, e.anomaly_flags,
+              e.ip_address AS entry_ip, e.lat AS entry_lat, e.lon AS entry_lon
        FROM attendance_sessions sess
        JOIN users u ON u.id = sess.user_id
        LEFT JOIN areas  a  ON a.id  = u.area_id
@@ -91,13 +92,8 @@ router.get('/range', requireAuth, requireRole('super_admin','admin','leader'), a
     const enriched = rows.map(row => {
       let breakdown = null;
       if (row.entry_time && row.exit_time) {
-        let lunchMin = 0;
-        if (row.lunch_out && row.lunch_in) {
-          lunchMin = Math.round((new Date(row.lunch_in) - new Date(row.lunch_out)) / 60000);
-        } else {
-          const totalMs = new Date(row.exit_time) - new Date(row.entry_time);
-          if (totalMs / 3600000 >= 9) lunchMin = 60;
-        }
+        const lunchMin = (row.lunch_out && row.lunch_in)
+          ? Math.round((new Date(row.lunch_in) - new Date(row.lunch_out)) / 60000) : 0;
         breakdown = calculateHoursBreakdown(new Date(row.entry_time), new Date(row.exit_time), lunchMin);
       }
       return { ...row, is_holiday: isHoliday(row.session_date), is_sunday: isSunday(row.session_date), breakdown };
@@ -262,6 +258,8 @@ function sendExcelReport(res, summary, detail, start, end) {
     'Horas':    r.total_hours || 0,
     'Tardanza': r.late_minutes || 0,
     'Estado':   r.session_status,
+    'IP':       r.entry_ip || '',
+    'Ubicacion (Maps)': (r.entry_lat && r.entry_lon) ? `https://maps.google.com/?q=${r.entry_lat},${r.entry_lon}` : '',
     'Alertas':  (r.anomaly_flags||[]).join(', '),
     'HED':      r.breakdown ? (r.breakdown.overtime_hed||0)   : 0,
     'HEN':      r.breakdown ? (r.breakdown.overtime_hen||0)   : 0,

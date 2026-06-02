@@ -21,6 +21,7 @@ router.get('/open-sessions', requireAuth, requireRole('super_admin','admin','lea
               a.name AS area, s.name AS sede,
               l.full_name AS leader_name, l.email AS leader_email,
               e.marked_at AS entry_time,
+              e.ip_address AS entry_ip, e.lat AS entry_lat, e.lon AS entry_lon,
               EXTRACT(EPOCH FROM (NOW() - e.marked_at))/3600 AS hours_open,
               sess.id AS session_id
        FROM attendance_sessions sess

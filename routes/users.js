@@ -163,6 +163,47 @@ router.put('/:id', requireAuth, requireRole('super_admin','admin'), async (req, 
 });
 
 // ─────────────────────────────────────────────────────────────
+// DELETE /api/users/bulk-delete — borrar TODOS los colaboradores
+// Solo super_admin. Conserva admins y lideres. Borra marcaciones.
+// ─────────────────────────────────────────────────────────────
+router.delete('/bulk-delete', requireAuth, requireRole('super_admin'), async (req, res) => {
+  try {
+    const { confirm } = req.body;
+    if (confirm !== 'CONFIRMAR_BORRADO') {
+      return res.status(400).json({ ok: false, message: 'Debes enviar confirm: "CONFIRMAR_BORRADO".' });
+    }
+
+    // Obtener IDs de empleados a borrar (solo role=employee, no admins ni lideres)
+    const { rows: empRows } = await db.query(
+      `SELECT id FROM users WHERE role = 'employee'`
+    );
+    const empIds = empRows.map(r => r.id);
+
+    if (!empIds.length) {
+      return res.json({ ok: true, message: 'No habia colaboradores para borrar.', deleted: 0 });
+    }
+
+    // Borrar en orden por dependencias
+    await db.query(`DELETE FROM audit_logs      WHERE actor_id = ANY($1)`, [empIds]);
+    await db.query(`DELETE FROM corrections     WHERE requester_id = ANY($1) OR target_user_id = ANY($1)`, [empIds]);
+    await db.query(`DELETE FROM payroll_summaries WHERE user_id = ANY($1)`, [empIds]);
+    await db.query(`DELETE FROM attendance_sessions WHERE user_id = ANY($1)`, [empIds]);
+    await db.query(`DELETE FROM attendances     WHERE user_id = ANY($1)`, [empIds]);
+    await db.query(`DELETE FROM buk_imports     WHERE imported_by = ANY($1)`, [empIds]);
+    await db.query(`UPDATE users SET leader_id = NULL WHERE leader_id = ANY($1)`, [empIds]);
+    await db.query(`DELETE FROM users WHERE id = ANY($1)`, [empIds]);
+
+    await auditLog(db, req.user, 'BULK_DELETE_EMPLOYEES', 'users', null, null,
+      { deleted_count: empIds.length, executed_by: req.user.full_name });
+
+    res.json({ ok: true, message: `✅ ${empIds.length} colaboradores eliminados. Ahora puedes importar el archivo correcto desde BUK.`, deleted: empIds.length });
+  } catch (err) {
+    console.error('bulk-delete error:', err.message);
+    res.status(500).json({ ok: false, message: 'Error al borrar: ' + err.message });
+  }
+});
+
+// ─────────────────────────────────────────────────────────────
 // POST /api/users/reset-password/:id
 // ─────────────────────────────────────────────────────────────
 router.post('/reset-password/:id', requireAuth, requireRole('super_admin','admin'), async (req, res) => {

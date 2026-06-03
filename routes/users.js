@@ -134,7 +134,8 @@ router.put('/:id', requireAuth, requireRole('super_admin','admin'), async (req, 
   try {
     const { full_name, email, phone, role, cargo, status,
             area_name, sede_name, shift_name, leader_employee_id,
-            start_date, buk_id, cost_center, contract_type } = req.body;
+            start_date, buk_id, cost_center, contract_type,
+            leader_email } = req.body;
 
     const { area_id, sede_id, shift_id, leader_id } =
       await resolveRelations(area_name, sede_name, shift_name, leader_employee_id);
@@ -144,12 +145,12 @@ router.put('/:id', requireAuth, requireRole('super_admin','admin'), async (req, 
          full_name=$1, email=$2, phone=$3, role=$4, cargo=$5, status=$6,
          area_id=$7, sede_id=$8, shift_id=$9, leader_id=$10,
          start_date=$11, buk_id=$12, cost_center=$13, contract_type=$14,
-         updated_at=NOW()
+         leader_email=$16, updated_at=NOW()
        WHERE id=$15 RETURNING id, employee_id, full_name, role, status`,
       [full_name, email || null, phone || null, role || 'employee', cargo || null, status || 'active',
        area_id, sede_id, shift_id, leader_id,
        start_date || null, buk_id || null, cost_center || null, contract_type || null,
-       req.params.id]
+       req.params.id, leader_email || null]
     );
 
     if (!rows.length) return res.status(404).json({ ok: false, message: 'Usuario no encontrado.' });
@@ -250,10 +251,14 @@ router.post('/import/buk', requireAuth, requireRole('super_admin','admin'),
       leaderMap[l.employee_id] = l.id;
       if (l.full_name) leaderNameMap[l.full_name.toLowerCase().trim()] = l.id;
     });
+
+    // Matching fuzzy por palabras (maneja "Apellido Nombre" vs "Nombre Apellido")
     function findLeaderByName(name, nameMap, users) {
       if (!name) return null;
       const norm = name.toLowerCase().trim();
+      // 1. Coincidencia exacta
       if (nameMap[norm]) return nameMap[norm];
+      // 2. Coincidencia por palabras (orden no importa)
       const words = norm.split(/\s+/).filter(w => w.length > 2);
       if (words.length < 2) return null;
       for (const u of users) {
@@ -313,9 +318,12 @@ router.post('/import/buk', requireAuth, requireRole('super_admin','admin'),
              VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,'employee')`,
             [empId, fullName, email, cargo, area_id, sede_id, leader_id, startDate, bukId, costCenter, hash]
           );
-          const newUserId = (await db.query('SELECT id FROM users WHERE employee_id=$1',[empId])).rows[0]?.id;
-          leaderMap[empId] = newUserId;
-          if (newUserId && fullName) { leaderNameMap[fullName.toLowerCase().trim()] = newUserId; leaderRows.push({ id: newUserId, employee_id: empId, full_name: fullName }); }
+          const newUser = (await db.query('SELECT id, full_name FROM users WHERE employee_id=$1',[empId])).rows[0];
+          if (newUser) {
+            leaderMap[empId] = newUser.id;
+            if (fullName) leaderNameMap[fullName.toLowerCase().trim()] = newUser.id;
+            leaderRows.push({ id: newUser.id, employee_id: empId, full_name: fullName });
+          }
           results.created++;
         } else {
           // ACTUALIZAR
@@ -329,19 +337,6 @@ router.post('/import/buk', requireAuth, requireRole('super_admin','admin'),
         }
       } catch (rowErr) {
         results.errors.push({ row: i + 2, error: rowErr.message });
-      }
-    }
-
-    // SEGUNDO PASO: asignar líderes ahora que TODOS los usuarios existen
-    for (let j = 0; j < rawRows.length; j++) {
-      const raw2 = rawRows[j];
-      let empId2 = String(findCol(raw2, COL_MAP.employee_id) || '').trim().replace(/[.,]/g, '');
-      if (!empId2) continue;
-      const leaderName2 = String(findCol(raw2, COL_MAP.leader) || '').trim();
-      if (!leaderName2) continue;
-      const lid = leaderMap[leaderName2] || findLeaderByName(leaderName2, leaderNameMap, leaderRows) || null;
-      if (lid) {
-        await db.query('UPDATE users SET leader_id=$1 WHERE employee_id=$2 AND (leader_id IS NULL OR leader_id != $1)', [lid, empId2]).catch(() => {});
       }
     }
 

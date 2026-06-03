@@ -347,6 +347,64 @@ router.get('/import/history', requireAuth, requireRole('super_admin','admin'), a
 // ─────────────────────────────────────────────────────────────
 // Helpers
 // ─────────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────
+// DELETE /api/users/bulk-delete — borrar TODOS los colaboradores
+// ─────────────────────────────────────────────────────────────
+router.delete('/bulk-delete', requireAuth, requireRole('super_admin'), async (req, res) => {
+  try {
+    const { confirm } = req.body;
+    if (confirm !== 'CONFIRMAR_BORRADO') {
+      return res.status(400).json({ ok: false, message: 'Debes enviar confirm: CONFIRMAR_BORRADO' });
+    }
+    const { rows: empRows } = await db.query("SELECT id FROM users WHERE role = 'employee'");
+    const empIds = empRows.map(r => r.id);
+    if (!empIds.length) return res.json({ ok: true, message: 'No habia colaboradores para borrar.', deleted: 0 });
+
+    await db.query('DELETE FROM audit_logs WHERE actor_id = ANY($1)', [empIds]);
+    await db.query('DELETE FROM corrections WHERE requester_id = ANY($1) OR target_user_id = ANY($1)', [empIds]);
+    await db.query('DELETE FROM payroll_summaries WHERE user_id = ANY($1)', [empIds]);
+    await db.query('DELETE FROM attendance_sessions WHERE user_id = ANY($1)', [empIds]);
+    await db.query('DELETE FROM attendances WHERE user_id = ANY($1)', [empIds]);
+    await db.query('DELETE FROM buk_imports WHERE imported_by = ANY($1)', [empIds]);
+    await db.query('UPDATE users SET leader_id = NULL WHERE leader_id = ANY($1)', [empIds]);
+    await db.query('DELETE FROM users WHERE id = ANY($1)', [empIds]);
+
+    await auditLog(db, req.user, 'BULK_DELETE_EMPLOYEES', 'users', null, null,
+      { deleted_count: empIds.length });
+    res.json({ ok: true, message: empIds.length + ' colaboradores eliminados. Ahora puedes importar el archivo correcto.', deleted: empIds.length });
+  } catch (err) {
+    console.error('bulk-delete error:', err.message);
+    res.status(500).json({ ok: false, message: 'Error al borrar: ' + err.message });
+  }
+});
+
+// ─────────────────────────────────────────────────────────────
+// DELETE /api/users/:id — borrar un colaborador individual
+// ─────────────────────────────────────────────────────────────
+router.delete('/:id', requireAuth, requireRole('super_admin','admin'), async (req, res) => {
+  try {
+    const { rows } = await db.query('SELECT full_name, role FROM users WHERE id=$1', [req.params.id]);
+    if (!rows.length) return res.status(404).json({ ok: false, message: 'Usuario no encontrado.' });
+    if (rows[0].role === 'super_admin') return res.status(403).json({ ok: false, message: 'No se puede borrar un super admin.' });
+
+    const ids = [req.params.id];
+    await db.query('DELETE FROM audit_logs WHERE actor_id = ANY($1)', [ids]);
+    await db.query('DELETE FROM corrections WHERE requester_id = ANY($1) OR target_user_id = ANY($1)', [ids]);
+    await db.query('DELETE FROM payroll_summaries WHERE user_id = ANY($1)', [ids]);
+    await db.query('DELETE FROM attendance_sessions WHERE user_id = ANY($1)', [ids]);
+    await db.query('DELETE FROM attendances WHERE user_id = ANY($1)', [ids]);
+    await db.query('UPDATE users SET leader_id = NULL WHERE leader_id = ANY($1)', [ids]);
+    await db.query('DELETE FROM users WHERE id = ANY($1)', [ids]);
+
+    await auditLog(db, req.user, 'USER_DELETED', 'user', req.params.id, { name: rows[0].full_name }, null);
+    res.json({ ok: true, message: rows[0].full_name + ' eliminado correctamente.' });
+  } catch (err) {
+    console.error('delete user error:', err.message);
+    res.status(500).json({ ok: false, message: 'Error al borrar: ' + err.message });
+  }
+});
+
+
 async function resolveRelations(areaName, sedeName, shiftName, leaderEmpId) {
   let area_id = null, sede_id = null, shift_id = null, leader_id = null;
 

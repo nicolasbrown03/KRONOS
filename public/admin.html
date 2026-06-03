@@ -74,6 +74,82 @@ tr:hover td{background:#f8fafc}
 .sec-title{font-size:18px;font-weight:800;margin-bottom:16px;color:#0f172a}
 .sec-sub{font-size:13px;color:#64748b;margin-bottom:16px;line-height:1.5}
 /* TOAST */
+
+<!-- MODAL EDITAR COLABORADOR -->
+<div id="modalEdit" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.5);z-index:500;align-items:center;justify-content:center">
+  <div style="background:#fff;border-radius:18px;padding:28px;width:100%;max-width:520px;max-height:90vh;overflow-y:auto;margin:16px;box-shadow:0 24px 60px rgba(0,0,0,.3)">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
+      <h2 style="font-size:18px;font-weight:800;color:#0f172a">Editar colaborador</h2>
+      <button onclick="closeEditModal()" style="background:none;border:none;font-size:20px;cursor:pointer;color:#64748b">✕</button>
+    </div>
+    <input type="hidden" id="editId">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+      <div class="field" style="grid-column:1/-1">
+        <label>Nombre completo</label>
+        <input type="text" id="editName" placeholder="Nombre completo">
+      </div>
+      <div class="field">
+        <label>Cédula / ID</label>
+        <input type="text" id="editEmpId" placeholder="Cédula" readonly style="background:#f8fafc;color:#94a3b8">
+      </div>
+      <div class="field">
+        <label>Cargo</label>
+        <input type="text" id="editCargo" placeholder="Cargo">
+      </div>
+      <div class="field">
+        <label>Área / Ecosistema</label>
+        <input type="text" id="editArea" placeholder="Área" list="editAreaList">
+        <datalist id="editAreaList"></datalist>
+      </div>
+      <div class="field">
+        <label>Líder directo (nombre)</label>
+        <input type="text" id="editLeader" placeholder="Nombre del líder" list="editLeaderList">
+        <datalist id="editLeaderList"></datalist>
+      </div>
+      <div class="field">
+        <label>Email del líder (para alertas)</label>
+        <input type="email" id="editLeaderEmail" placeholder="lider@somosinternet.co">
+        <span style="font-size:11px;color:#94a3b8">Si el líder no está en el sistema, ingresa su email aquí para recibir alertas</span>
+      </div>
+      <div class="field">
+        <label>Email</label>
+        <input type="email" id="editEmail" placeholder="correo@empresa.co">
+      </div>
+      <div class="field">
+        <label>Teléfono</label>
+        <input type="text" id="editPhone" placeholder="+57...">
+      </div>
+      <div class="field">
+        <label>Turno</label>
+        <select id="editShift">
+          <option value="">Sin turno asignado</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Estado</label>
+        <select id="editStatus">
+          <option value="active">Activo</option>
+          <option value="inactive">Inactivo</option>
+          <option value="suspended">Suspendido</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Rol</label>
+        <select id="editRole">
+          <option value="employee">Empleado</option>
+          <option value="leader">Líder</option>
+          <option value="admin">Admin</option>
+          <option value="super_admin">Super Admin</option>
+        </select>
+      </div>
+    </div>
+    <div style="display:flex;gap:10px;margin-top:20px;justify-content:flex-end">
+      <button class="btn btn-neutral" onclick="closeEditModal()">Cancelar</button>
+      <button class="btn btn-primary" onclick="saveEditModal()">💾 Guardar cambios</button>
+    </div>
+  </div>
+</div>
+
 #toast{position:fixed;bottom:24px;right:24px;background:#0f172a;color:#fff;
   padding:12px 20px;border-radius:12px;font-size:14px;font-weight:600;
   transform:translateY(80px);opacity:0;transition:all .3s;z-index:999}
@@ -548,22 +624,63 @@ async function createUser(data){
 }
 
 async function editUser(id){
-  const res=await api(`/api/users/${id}`);
+  const res=await api('/api/users/'+id);
   const d=await res.json();
   if(!d.ok){toast(d.message,false);return;}
   const u=d.user;
-  const newName=prompt('Nombre completo:',u.full_name); if(!newName) return;
-  const newCargo=prompt('Cargo:',u.cargo||'');
-  const newArea=prompt('Área:',u.area||'');
-  const newStatus=prompt('Estado (active/inactive/suspended):',u.status);
 
-  const res2=await api(`/api/users/${id}`,{method:'PUT',body:JSON.stringify({
-    full_name:newName, cargo:newCargo, area_name:newArea,
-    status:newStatus, role:u.role, email:u.email
-  })});
-  const d2=await res2.json();
-  toast(d2.message, d2.ok);
-  if(d2.ok) loadUsers();
+  // Llenar el modal
+  document.getElementById('editId').value=id;
+  document.getElementById('editName').value=u.full_name||'';
+  document.getElementById('editEmpId').value=u.employee_id||'';
+  document.getElementById('editCargo').value=u.cargo||'';
+  document.getElementById('editArea').value=u.area||'';
+  document.getElementById('editEmail').value=u.email||'';
+  document.getElementById('editPhone').value=u.phone||'';
+  document.getElementById('editStatus').value=u.status||'active';
+  document.getElementById('editRole').value=u.role||'employee';
+  document.getElementById('editLeader').value=u.leader_name||'';
+  document.getElementById('editLeaderEmail').value=u.leader_email||'';
+
+  // Poblar datalists
+  const aRes=await api('/api/areas'); const aData=await aRes.json();
+  const aDL=document.getElementById('editAreaList');
+  aDL.innerHTML=(aData.areas||[]).map(a=>'<option value="'+h(a.name)+'">').join('');
+
+  const sRes=await api('/api/shifts'); const sData=await sRes.json();
+  const sSel=document.getElementById('editShift');
+  sSel.innerHTML='<option value="">Sin turno asignado</option>'+(sData.shifts||[]).map(s=>'<option value="'+h(s.name)+'" '+(u.shift===s.name?'selected':'')+'>'+h(s.name)+'</option>').join('');
+
+  // Lista de colaboradores para el líder
+  const uRes=await api('/api/users?limit=200&status=active'); const uData=await uRes.json();
+  const lDL=document.getElementById('editLeaderList');
+  lDL.innerHTML=(uData.users||[]).map(ul=>'<option value="'+h(ul.full_name)+'">').join('');
+
+  document.getElementById('modalEdit').style.display='flex';
+}
+
+function closeEditModal(){
+  document.getElementById('modalEdit').style.display='none';
+}
+
+async function saveEditModal(){
+  const id=document.getElementById('editId').value;
+  const body={
+    full_name:    document.getElementById('editName').value,
+    cargo:        document.getElementById('editCargo').value,
+    area_name:    document.getElementById('editArea').value,
+    email:        document.getElementById('editEmail').value || null,
+    phone:        document.getElementById('editPhone').value || null,
+    status:       document.getElementById('editStatus').value,
+    role:         document.getElementById('editRole').value,
+    shift_name:   document.getElementById('editShift').value || null,
+    leader_employee_id: document.getElementById('editLeader').value || null,
+    leader_email: document.getElementById('editLeaderEmail').value || null
+  };
+  const res=await api('/api/users/'+id,{method:'PUT',body:JSON.stringify(body)});
+  const d=await res.json();
+  toast(d.message,d.ok);
+  if(d.ok){ closeEditModal(); loadUsers(); }
 }
 
 // ─────────────────────── IMPORT BUK ───────────────────────

@@ -177,6 +177,35 @@ async function initAdmin() {
 // ─────────────────────────────────────────────────────────────
 // Iniciar servidor
 // ─────────────────────────────────────────────────────────────
+// Migraciones de columnas nuevas (se ejecutan en cada arranque, idempotentes)
+async function runMigrations() {
+  const migs = [
+    `ALTER TABLE users ADD COLUMN IF NOT EXISTS requires_attendance BOOLEAN DEFAULT true`,
+    `ALTER TABLE users ADD COLUMN IF NOT EXISTS leader_name_text VARCHAR(120)`,
+    `ALTER TABLE users ADD COLUMN IF NOT EXISTS leader_email VARCHAR(120)`,
+    `CREATE TABLE IF NOT EXISTS area_settings (
+      area_id UUID PRIMARY KEY REFERENCES areas(id),
+      manual_lunch BOOLEAN DEFAULT false,
+      lunch_minutes INTEGER DEFAULT 60,
+      max_turns INTEGER DEFAULT 1,
+      min_hours_between DECIMAL(4,2) DEFAULT 1.0,
+      geo_required_override BOOLEAN DEFAULT false,
+      updated_at TIMESTAMPTZ DEFAULT NOW()
+    )`,
+    `ALTER TABLE area_settings ADD COLUMN IF NOT EXISTS manual_lunch BOOLEAN DEFAULT false`,
+    `ALTER TABLE area_settings ADD COLUMN IF NOT EXISTS lunch_minutes INTEGER DEFAULT 60`,
+    `CREATE TABLE IF NOT EXISTS excluded_roles (cargo VARCHAR(80) PRIMARY KEY, reason TEXT, created_at TIMESTAMPTZ DEFAULT NOW())`,
+    `ALTER TABLE attendance_sessions ADD COLUMN IF NOT EXISTS turn_number INTEGER DEFAULT 1`,
+    `INSERT INTO area_settings (area_id, manual_lunch, lunch_minutes)
+     SELECT a.id, true, 60 FROM areas a WHERE LOWER(a.name) = 'accounting and treasury'
+     ON CONFLICT (area_id) DO UPDATE SET manual_lunch = true`
+  ];
+  for (const sql of migs) {
+    await db.query(sql).catch(e => console.warn('Migration skipped:', e.message.substring(0,60)));
+  }
+  console.log('   Migraciones OK');
+}
+
 app.listen(PORT, async () => {
   console.log(`\n⚡ KRONOS 3.0 corriendo en puerto ${PORT}`);
   console.log(`   Entorno: ${process.env.NODE_ENV || 'development'}`);

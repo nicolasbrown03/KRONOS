@@ -243,9 +243,13 @@ router.post('/import/buk', requireAuth, requireRole('super_admin','admin'),
     }
 
     // Obtener todos los líderes existentes para resolver por employee_id
-    const { rows: leaderRows } = await db.query('SELECT id, employee_id FROM users');
-    const leaderMap = {};
-    leaderRows.forEach(l => { leaderMap[l.employee_id] = l.id; });
+    const { rows: leaderRows } = await db.query('SELECT id, employee_id, full_name FROM users');
+    const leaderMap = {};      // por employee_id
+    const leaderNameMap = {};  // por nombre completo (para Excel que trae nombres de lideres)
+    leaderRows.forEach(l => {
+      leaderMap[l.employee_id] = l.id;
+      if (l.full_name) leaderNameMap[l.full_name.toLowerCase().trim()] = l.id;
+    });
 
     const results = { created: 0, updated: 0, errors: [] };
     const importId = require('crypto').randomUUID();
@@ -281,7 +285,7 @@ router.post('/import/buk', requireAuth, requireRole('super_admin','admin'),
         }
 
         const { area_id, sede_id } = await resolveRelations(areaName, sedeName, null, null);
-        const leader_id = leaderMap[leaderEmpId] || null;
+        const leader_id = leaderMap[leaderEmpId] || leaderNameMap[leaderEmpId.toLowerCase().trim()] || null;
 
         // Insertar o actualizar
         const existing = await db.query('SELECT id FROM users WHERE employee_id=$1', [empId]);
@@ -295,7 +299,9 @@ router.post('/import/buk', requireAuth, requireRole('super_admin','admin'),
              VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,'employee')`,
             [empId, fullName, email, cargo, area_id, sede_id, leader_id, startDate, bukId, costCenter, hash]
           );
-          leaderMap[empId] = (await db.query('SELECT id FROM users WHERE employee_id=$1',[empId])).rows[0]?.id;
+          const newUserId = (await db.query('SELECT id FROM users WHERE employee_id=$1',[empId])).rows[0]?.id;
+          leaderMap[empId] = newUserId;
+          if (newUserId && fullName) leaderNameMap[fullName.toLowerCase().trim()] = newUserId;
           results.created++;
         } else {
           // ACTUALIZAR

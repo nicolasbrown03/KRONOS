@@ -212,7 +212,7 @@ router.post('/import/buk', requireAuth, requireRole('super_admin','admin'),
 
     // ── Mapeo flexible de columnas ──
     const COL_MAP = {
-      employee_id: ['cédula','cedula','rut','id colaborador','id empleado','numero documento',
+      employee_id: ['id','cédula','cedula','rut','id colaborador','id empleado','numero documento',
                     'no. documento','documento','código colaborador'],
       full_name:   ['empleado','nombre completo','nombres y apellidos','nombre colaborador'],
       first_name:  ['nombres','nombre'],
@@ -229,9 +229,15 @@ router.post('/import/buk', requireAuth, requireRole('super_admin','admin'),
 
     function findCol(row, keys) {
       const rowKeys = Object.keys(row).map(k => ({ orig: k, norm: k.toLowerCase().trim() }));
+      // Fase 1: coincidencia exacta (mas segura)
       for (const key of keys) {
-        const found = rowKeys.find(k => k.norm.includes(key) || (k.norm.length >= 4 && key.includes(k.norm)));
-        if (found) return row[found.orig];
+        const exact = rowKeys.find(k => k.norm === key);
+        if (exact) return row[exact.orig];
+      }
+      // Fase 2: el encabezado de columna CONTIENE la clave (no al reves, evita falsos positivos)
+      for (const key of keys) {
+        const partial = rowKeys.find(k => k.norm.includes(key) && key.length >= 3);
+        if (partial) return row[partial.orig];
       }
       return '';
     }

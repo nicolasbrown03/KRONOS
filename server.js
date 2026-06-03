@@ -35,15 +35,15 @@ app.use('/api/attendance',  require('./routes/attendance'));
 app.use('/api/users',       require('./routes/users'));
 app.use('/api/corrections', require('./routes/corrections'));
 app.use('/api/reports',     require('./routes/reports'));
-app.use('/api/alerts',      require('./routes/alerts'));
 app.use('/api/areas',       require('./routes/areas'));
+app.use('/api/alerts',      require('./routes/alerts'));
 
 // ─────────────────────────────────────────────────────────────
-// Rutas de sedes y turnos (CRUD básico)
+// Rutas de áreas, sedes y turnos (CRUD básico)
 // ─────────────────────────────────────────────────────────────
 const { requireAuth, requireRole } = require('./middleware/auth');
 
-app.get('/api/areas-legacy', requireAuth, async (req, res) => {
+app.get('/api/areas', requireAuth, async (req, res) => {
   const { rows } = await db.query('SELECT * FROM areas ORDER BY name');
   res.json({ ok: true, areas: rows });
 });
@@ -150,58 +150,6 @@ app.get('*', (req, res) => {
 });
 
 // ─────────────────────────────────────────────────────────────
-// Inicialización: ejecutar schema SQL si las tablas no existen
-// ─────────────────────────────────────────────────────────────
-async function initSchema() {
-  try {
-    const { rows } = await db.query(
-      `SELECT to_regclass('public.users') AS tbl`
-    );
-    if (rows[0].tbl) {
-      console.log('   DB: tablas ya existen ✅');
-      // Migraciones para bases de datos existentes
-      await db.query(`ALTER TABLE attendance_sessions ADD COLUMN IF NOT EXISTS turn_number INTEGER DEFAULT 1`).catch(() => {});
-      await db.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS requires_attendance BOOLEAN DEFAULT true`).catch(() => {});
-      await db.query(`CREATE TABLE IF NOT EXISTS area_settings (
-        area_id UUID PRIMARY KEY REFERENCES areas(id),
-        max_turns INTEGER DEFAULT 1,
-        min_hours_between DECIMAL(4,2) DEFAULT 1.0,
-        geo_required_override BOOLEAN DEFAULT false,
-        exclude_from_attendance BOOLEAN DEFAULT false,
-        updated_at TIMESTAMPTZ DEFAULT NOW()
-      )`).catch(() => {});
-      await db.query(`CREATE TABLE IF NOT EXISTS excluded_roles (
-        cargo VARCHAR(80) PRIMARY KEY,
-        reason TEXT,
-        created_at TIMESTAMPTZ DEFAULT NOW()
-      )`).catch(() => {});
-      // Actualizar el constraint único si todavía usa el esquema viejo
-      await db.query(`
-        DO $$ BEGIN
-          IF EXISTS (
-            SELECT 1 FROM pg_constraint
-            WHERE conname = 'attendance_sessions_user_id_session_date_key'
-          ) THEN
-            ALTER TABLE attendance_sessions DROP CONSTRAINT attendance_sessions_user_id_session_date_key;
-            ALTER TABLE attendance_sessions ADD CONSTRAINT attendance_sessions_user_date_turn_key
-              UNIQUE (user_id, session_date, turn_number);
-          END IF;
-        END $$
-      `).catch(() => {});
-      return;
-    }
-    console.log('   DB: ejecutando schema inicial...');
-    const fs   = require('fs');
-    const path = require('path');
-    const sql  = fs.readFileSync(path.join(__dirname, 'db', 'schema.sql'), 'utf8');
-    await db.query(sql);
-    console.log('   DB: schema creado ✅');
-  } catch (err) {
-    console.error('   DB schema error:', err.message);
-  }
-}
-
-// ─────────────────────────────────────────────────────────────
 // Inicialización: crear admin inicial si no existe
 // ─────────────────────────────────────────────────────────────
 async function initAdmin() {
@@ -232,36 +180,8 @@ async function initAdmin() {
 app.listen(PORT, async () => {
   console.log(`\n⚡ KRONOS 3.0 corriendo en puerto ${PORT}`);
   console.log(`   Entorno: ${process.env.NODE_ENV || 'development'}`);
-  await initSchema();
   await initAdmin();
-  startKeepAlive();
   console.log(`   Listo ✅\n`);
 });
-
-// ─────────────────────────────────────────────────────────────
-// KEEP-ALIVE — evita que Render free tier duerma el servidor
-// Se auto-pinga cada 14 minutos (Render duerme a los 15 min)
-// Render inyecta RENDER_EXTERNAL_URL automáticamente en producción
-// ─────────────────────────────────────────────────────────────
-function startKeepAlive() {
-  const appUrl = process.env.RENDER_EXTERNAL_URL;
-  if (!appUrl) {
-    console.log('   Keep-alive: desactivado (solo activo en Render)');
-    return;
-  }
-
-  const https = require('https');
-  const INTERVAL_MS = 14 * 60 * 1000; // 14 minutos
-
-  setInterval(() => {
-    https.get(`${appUrl}/api/health`, (res) => {
-      console.log(`[keep-alive] ping OK → ${res.statusCode}`);
-    }).on('error', (err) => {
-      console.warn('[keep-alive] ping falló:', err.message);
-    });
-  }, INTERVAL_MS);
-
-  console.log(`   Keep-alive: activo (ping cada 14 min → ${appUrl}/api/health)`);
-}
 
 module.exports = app;

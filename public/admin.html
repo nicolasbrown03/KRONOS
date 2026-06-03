@@ -320,6 +320,14 @@ tr:hover td{background:#f8fafc}
         <label>Max turnos por dia</label>
         <input type="number" id="cfgMaxTurns" value="1" min="1" max="5">
       </div>
+      <label style="display:flex;gap:8px;align-items:center;margin-top:8px;font-size:13px;cursor:pointer">
+        <input type="checkbox" id="cfgManualLunch">
+        <span><strong>Almuerzo manual</strong> (puede marcar entrada/salida de almuerzo)</span>
+      </label>
+      <div class="field" style="margin-top:8px" id="cfgLunchMinDiv">
+        <label>Minutos de almuerzo</label>
+        <input type="number" id="cfgLunchMin" value="60" min="15" max="120" step="5">
+      </div>
       <div class="field">
         <label>Horas minimas entre turnos</label>
         <input type="number" id="cfgMinHours" value="1" min="0" step="0.5">
@@ -811,9 +819,11 @@ async function loadAreaConfig() {
     const opt = document.createElement('option');
     opt.value = a.id;
     opt.textContent = a.name;
-    opt.dataset.maxTurns = a.max_turns || 1;
-    opt.dataset.minHours = a.min_hours_between || 1;
-    opt.dataset.geoReq   = a.geo_required_override || false;
+    opt.dataset.maxTurns    = a.max_turns || 1;
+    opt.dataset.minHours    = a.min_hours_between || 1;
+    opt.dataset.geoReq      = a.geo_required_override || false;
+    opt.dataset.manualLunch = a.manual_lunch || false;
+    opt.dataset.lunchMinutes= a.lunch_minutes || 60;
     sel.appendChild(opt);
   });
   sel.onchange = function() {
@@ -936,9 +946,11 @@ async function loadAreaConfig() {
   (d.areas||[]).forEach(a => {
     const opt = document.createElement('option');
     opt.value = a.id; opt.textContent = a.name;
-    opt.dataset.maxTurns = a.max_turns || 1;
-    opt.dataset.minHours = a.min_hours_between || 1;
-    opt.dataset.geoReq   = a.geo_required_override || false;
+    opt.dataset.maxTurns    = a.max_turns || 1;
+    opt.dataset.minHours    = a.min_hours_between || 1;
+    opt.dataset.geoReq      = a.geo_required_override || false;
+    opt.dataset.manualLunch = a.manual_lunch || false;
+    opt.dataset.lunchMinutes= a.lunch_minutes || 60;
     sel.appendChild(opt);
   });
   sel.onchange = function() {

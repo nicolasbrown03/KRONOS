@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>KRONOS 3.0 — Marcación</title>
+<title>KRONOS 3.0 — Marcacion</title>
 <style>
 :root{--pri:#3b82f6;--pri-d:#1d4ed8;--ok:#10b981;--ok-d:#059669;
       --warn:#f59e0b;--err:#ef4444;--bg:#0a0e18;--card:#fff}
@@ -17,34 +17,52 @@ body{min-height:100vh;display:flex;align-items:center;justify-content:center;
 .header h2{font-size:16px;font-weight:800;color:#0a0e18}
 .time-badge{font-size:13px;font-weight:700;background:#f1f5f9;padding:5px 10px;
   border-radius:20px;color:#334155;font-variant-numeric:tabular-nums}
-.user-panel{background:#f8fafc;border-radius:14px;padding:14px 16px;margin-bottom:16px;
-  border:1px solid #e2e8f0}
-.user-name{font-size:15px;font-weight:700;color:#0f172a}
-.user-meta{font-size:12px;color:#64748b;margin-top:2px}
-.status-box{border-radius:14px;padding:13px 15px;margin-bottom:16px;display:flex;
-  align-items:flex-start;gap:10px;min-height:58px;font-size:14px;font-weight:600;
+.panel{margin-bottom:14px;padding:16px;border-radius:14px;background:#f8fafc;border:1px solid #e2e8f0}
+.panel-title{font-size:11px;font-weight:700;text-transform:uppercase;color:#334155;margin-bottom:10px}
+.field{margin-bottom:12px}
+.field label{display:block;font-size:12px;font-weight:700;color:#0f172a;margin-bottom:5px}
+.field input,.field select{width:100%;padding:12px 14px;border-radius:12px;
+  border:1.5px solid #e2e8f0;background:#fff;color:#0f172a;font-size:15px;outline:none}
+.btn-confirm{width:100%;padding:13px;border:none;border-radius:12px;font-size:14px;
+  font-weight:700;cursor:pointer;background:linear-gradient(180deg,#475569,#334155);
+  color:#fff;margin-top:8px}
+.user-ok{background:#ecfdf5;border:1px solid #bbf7d0;border-radius:12px;
+  padding:12px 14px;margin-bottom:14px;display:none}
+.user-ok.visible{display:block}
+.user-name{font-size:15px;font-weight:700;color:#065f46}
+.user-meta{font-size:12px;color:#047857;margin-top:2px}
+.status-box{border-radius:14px;padding:13px 15px;margin-bottom:14px;display:flex;
+  align-items:flex-start;gap:10px;min-height:56px;font-size:14px;font-weight:600;
   white-space:pre-wrap;line-height:1.4}
-.s-info   {background:#eef2ff;border:1px solid #c7d2fe;color:#1e293b}
-.s-ok     {background:#ecfdf5;border:1px solid #bbf7d0;color:#065f46}
-.s-warn   {background:#fff7ed;border:1px solid #fed7aa;color:#9a3412}
-.s-error  {background:#fff1f2;border:1px solid #fecdd3;color:#9f1239}
-.s-emoji  {font-size:18px;flex:0 0 22px;margin-top:1px}
+.s-info {background:#eef2ff;border:1px solid #c7d2fe;color:#1e293b}
+.s-ok   {background:#ecfdf5;border:1px solid #bbf7d0;color:#065f46}
+.s-warn {background:#fff7ed;border:1px solid #fed7aa;color:#9a3412}
+.s-error{background:#fff1f2;border:1px solid #fecdd3;color:#9f1239}
+.s-emoji{font-size:18px;flex:0 0 22px;margin-top:1px}
+/* Botones de marcacion */
 .btns{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px}
-.btns-secondary{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}
+.btns-lunch{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}
 button{border:none;border-radius:12px;font-size:14px;font-weight:700;cursor:pointer;
   padding:13px 10px;transition:opacity .15s,transform .05s}
 button:active{transform:translateY(1px)}
-button:disabled{opacity:.5;cursor:not-allowed}
+button:disabled{opacity:.4;cursor:not-allowed}
 .btn-entry {background:linear-gradient(180deg,var(--pri),var(--pri-d));color:#fff}
 .btn-exit  {background:linear-gradient(180deg,var(--ok),var(--ok-d));color:#fff}
-.btn-lunch {background:#f1f5f9;color:#334155;border:1px solid #e2e8f0;font-size:13px}
-.btn-reset {width:100%;background:#f8fafc;color:#64748b;border:1px solid #e2e8f0;
+.btn-lunch-out{background:#f59e0b;color:#fff;font-size:13px}
+.btn-lunch-in {background:#8b5cf6;color:#fff;font-size:13px}
+.btn-reset{width:100%;background:#f8fafc;color:#64748b;border:1px solid #e2e8f0;
   font-size:13px;margin-top:4px;display:none}
-.footer-note{padding:12px 14px;border-radius:12px;background:rgba(248,250,252,.9);
+/* Timer de almuerzo */
+.lunch-timer{display:none;background:#fffbeb;border:1px solid #fbbf24;border-radius:12px;
+  padding:12px 14px;margin-bottom:10px;text-align:center}
+.lunch-timer.visible{display:block}
+.lunch-time-display{font-size:28px;font-weight:800;color:#92400e;font-variant-numeric:tabular-nums}
+.lunch-time-label{font-size:12px;color:#78350f;margin-top:2px}
+.lunch-time-warning{font-size:13px;color:#ef4444;font-weight:700;margin-top:4px;display:none}
+.footer-note{padding:11px 13px;border-radius:12px;background:rgba(248,250,252,.9);
   border:1px dashed #cbd5e1;color:#64748b;font-size:12px;line-height:1.5}
-.logout{font-size:12px;color:#94a3b8;text-align:center;margin-top:12px;cursor:pointer}
-.logout:hover{color:#64748b}
-@media(max-width:420px){.btns,.btns-secondary{grid-template-columns:1fr}}
+.admin-link{font-size:12px;color:#94a3b8;text-align:center;margin-top:12px}
+.admin-link a{color:#3b82f6;text-decoration:none}
 </style>
 </head>
 <body>
@@ -54,108 +72,267 @@ button:disabled{opacity:.5;cursor:not-allowed}
     <h2>⚡ KRONOS 3.0</h2>
     <div class="time-badge" id="clock">--:--</div>
   </div>
-  <div class="user-panel">
-    <div class="user-name" id="userName">Cargando...</div>
+
+  <div class="panel">
+    <div class="panel-title">Identificacion</div>
+    <div class="field">
+      <label>ID del colaborador (cedula)</label>
+      <input type="text" id="empId" placeholder="Sin puntos ni comas" inputmode="numeric" autocomplete="off">
+    </div>
+    <div class="field">
+      <label>Ecosistema</label>
+      <select id="ecosystem">
+        <option value="">Cargando...</option>
+      </select>
+    </div>
+    <button class="btn-confirm" id="btnConfirm" onclick="buscarColaborador()">🔎 Confirmar</button>
+  </div>
+
+  <div class="user-ok" id="userPanel">
+    <div class="user-name" id="userName"></div>
     <div class="user-meta" id="userMeta"></div>
   </div>
+
   <div class="status-box s-info" id="statusBox">
     <div class="s-emoji">ℹ️</div>
-    <div id="statusText">Cargando tu información...</div>
+    <div id="statusText">Ingresa tu ID y ecosistema, luego confirma.</div>
   </div>
+
+  <!-- Timer de almuerzo -->
+  <div class="lunch-timer" id="lunchTimer">
+    <div class="lunch-time-label">⏱ Tiempo de almuerzo restante</div>
+    <div class="lunch-time-display" id="lunchTimeDisplay">60:00</div>
+    <div class="lunch-time-warning" id="lunchWarning">⚠️ ¡Quedan 10 minutos!</div>
+  </div>
+
   <div class="btns">
-    <button class="btn-entry" id="btnEntry"  onclick="mark('entry')">📥 Entrada</button>
-    <button class="btn-exit"  id="btnExit"   onclick="mark('exit')">📤 Salida</button>
+    <button class="btn-entry" id="btnEntry"  onclick="marcar('entry')"  disabled>📥 Entrada</button>
+    <button class="btn-exit"  id="btnExit"   onclick="marcar('exit')"   disabled>📤 Salida</button>
   </div>
-  <div class="btns-secondary">
-    <button class="btn-lunch" id="btnLunchOut" onclick="mark('lunch_out')">🍽 Salir almuerzo</button>
-    <button class="btn-lunch" id="btnLunchIn"  onclick="mark('lunch_in')">☕ Volver almuerzo</button>
+
+  <!-- Botones de almuerzo - solo visibles si el ecosistema lo permite -->
+  <div class="btns-lunch" id="lunchBtns" style="display:none">
+    <button class="btn-lunch-out" id="btnLunchOut" onclick="marcar('lunch_out')" disabled>🍽 Salir almuerzo</button>
+    <button class="btn-lunch-in"  id="btnLunchIn"  onclick="marcar('lunch_in')"  disabled>☕ Volver almuerzo</button>
   </div>
-  <button class="btn-reset" id="btnReset" onclick="refreshStatus()">↩ Ver estado actualizado</button>
-  <div class="footer-note" id="footerNote">
-    Primero carga tu información. La ubicación puede ser solicitada según tu área.
-  </div>
-  <div class="logout" onclick="logout()">Cerrar sesión</div>
+
+  <button class="btn-reset" id="btnReset" onclick="resetForm()">↩ Marcar otro colaborador</button>
+
+  <div class="footer-note" id="footerNote">La ubicacion puede ser solicitada segun tu area.</div>
+  <div class="admin-link"><a href="/login.html">Acceso administradores</a></div>
 </div>
 </div>
 
 <script>
-const API   = '';
-let busy    = false;
-let userInfo = null;
+const API = '';
+let busy = false;
+let confirmedUser = null;
+let lunchConfig = { manual_lunch: false, lunch_minutes: 60 };
+let lunchInterval = null;
+let lunchSecondsLeft = 0;
+let warned10min = false;
 
-// ─── Auth ───
-const token = localStorage.getItem('kr_token');
-const user  = JSON.parse(localStorage.getItem('kr_user') || '{}');
-if (!token) { window.location.href = '/login.html'; }
-
-// ─── Reloj ───
+// Reloj
 function updateClock() {
-  const now = new Date();
   document.getElementById('clock').textContent =
-    now.toLocaleTimeString('es-CO',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+    new Date().toLocaleTimeString('es-CO',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
 }
 setInterval(updateClock, 1000); updateClock();
 
-// ─── Cargar info de usuario y estado del día ───
-async function loadUserInfo() {
+// Cargar ecosistemas
+fetch(API + '/api/public/areas')
+  .then(r => r.json())
+  .then(d => {
+    const sel = document.getElementById('ecosystem');
+    sel.innerHTML = '<option value="">Selecciona tu area...</option>';
+    (d.areas || []).forEach(a => {
+      const opt = document.createElement('option');
+      opt.value = opt.textContent = a;
+      sel.appendChild(opt);
+    });
+  }).catch(() => {
+    const sel = document.getElementById('ecosystem');
+    sel.innerHTML = '<option value="">Selecciona...</option>';
+    ['Instalaciones','Sac','Ventas','Ventas Bog','Accounting and treasury',
+     'Soporte N2','Soporte en sitio','CEDI','Relevamiento','Noc'].forEach(a => {
+      const opt = document.createElement('option');
+      opt.value = opt.textContent = a;
+      sel.appendChild(opt);
+    });
+  });
+
+// Solicitar permiso de notificaciones al cargar
+if ('Notification' in window && Notification.permission === 'default') {
+  Notification.requestPermission();
+}
+
+// Sonido beep via Web Audio API
+function playBeep(frequency, duration, type) {
   try {
-    const [meRes, todayRes] = await Promise.all([
-      fetch(`${API}/api/auth/me`,          {headers:{Authorization:`Bearer ${token}`}}),
-      fetch(`${API}/api/attendance/today`, {headers:{Authorization:`Bearer ${token}`}})
-    ]);
-    if (meRes.status === 401) { logout(); return; }
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain); gain.connect(ctx.destination);
+    osc.frequency.value = frequency || 880;
+    osc.type = type || 'sine';
+    gain.gain.setValueAtTime(0.3, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + (duration || 0.5));
+    osc.start(ctx.currentTime);
+    osc.stop(ctx.currentTime + (duration || 0.5));
+  } catch(e) {}
+}
 
-    const me    = await meRes.json();
-    const today = await todayRes.json();
+function playWarningSound() {
+  playBeep(440, 0.3); setTimeout(() => playBeep(440, 0.3), 350); setTimeout(() => playBeep(440, 0.3), 700);
+}
 
-    if (me.ok) {
-      userInfo = me.user;
-      document.getElementById('userName').textContent = me.user.full_name;
-      document.getElementById('userMeta').textContent =
-        [me.user.cargo, me.user.area, me.user.shift && `Turno: ${me.user.shift}`]
-        .filter(Boolean).join(' · ');
-    }
+function playEndSound() {
+  playBeep(880, 0.2); setTimeout(() => playBeep(660, 0.2), 250); setTimeout(() => playBeep(440, 0.4), 500);
+}
 
-    const sess = today.session;
-    let msg = '';
-    let cls = 's-info';
-    let emoji = 'ℹ️';
-
-    if (!sess || !sess.entry_time) {
-      msg = 'No has marcado entrada hoy.\nPresiona "Entrada" para iniciar tu jornada.';
-    } else if (sess.entry_time && !sess.exit_time) {
-      const h = new Date(sess.entry_time).toLocaleTimeString('es-CO',{hour:'2-digit',minute:'2-digit',timeZone:'America/Bogota'});
-      msg = `✅ Jornada activa desde las ${h}.`;
-      if (sess.late_minutes > 0) msg += `\n⚠️ Tardanza: ${sess.late_minutes} min.`;
-      cls = 's-ok'; emoji = '✅';
-    } else if (sess.exit_time) {
-      const hi = new Date(sess.entry_time).toLocaleTimeString('es-CO',{hour:'2-digit',minute:'2-digit',timeZone:'America/Bogota'});
-      const ho = new Date(sess.exit_time).toLocaleTimeString('es-CO',{hour:'2-digit',minute:'2-digit',timeZone:'America/Bogota'});
-      msg = `Jornada cerrada — Entrada: ${hi} | Salida: ${ho}\nHoras: ${sess.total_hours||'--'}`;
-      cls = 's-info'; emoji = '📋';
-    }
-
-    setStatus(cls, emoji, msg);
-  } catch(e) {
-    setStatus('s-error','⛔','Error cargando información. Recarga la página.');
+function sendNotification(title, body) {
+  if ('Notification' in window && Notification.permission === 'granted') {
+    new Notification(title, { body, icon: '/favicon.ico' });
   }
 }
-loadUserInfo();
 
-// ─── Marcación ───
-async function mark(type) {
+// Iniciar timer de almuerzo
+function startLunchTimer(minutes) {
+  lunchSecondsLeft = (minutes || 60) * 60;
+  warned10min = false;
+  const timerEl = document.getElementById('lunchTimer');
+  const display = document.getElementById('lunchTimeDisplay');
+  const warning = document.getElementById('lunchWarning');
+  timerEl.classList.add('visible');
+  warning.style.display = 'none';
+
+  if (lunchInterval) clearInterval(lunchInterval);
+
+  lunchInterval = setInterval(() => {
+    lunchSecondsLeft--;
+    const m = Math.floor(lunchSecondsLeft / 60);
+    const s = lunchSecondsLeft % 60;
+    display.textContent = String(m).padStart(2,'0') + ':' + String(s).padStart(2,'0');
+
+    // Alerta 10 minutos
+    if (lunchSecondsLeft === 600 && !warned10min) {
+      warned10min = true;
+      warning.style.display = 'block';
+      timerEl.style.background = '#fff7ed';
+      timerEl.style.borderColor = '#f59e0b';
+      playWarningSound();
+      sendNotification('⏱ Almuerzo - 10 minutos', 'Quedan 10 minutos de almuerzo. Prepárate para volver.');
+    }
+
+    // Timer termino
+    if (lunchSecondsLeft <= 0) {
+      clearInterval(lunchInterval);
+      lunchInterval = null;
+      display.textContent = '00:00';
+      timerEl.style.background = '#fff1f2';
+      timerEl.style.borderColor = '#fecdd3';
+      warning.textContent = '🔔 ¡Tu tiempo de almuerzo terminó!';
+      warning.style.display = 'block';
+      warning.style.color = '#9f1239';
+      playEndSound(); setTimeout(playEndSound, 1000);
+      sendNotification('🔔 Tiempo de almuerzo terminado', 'Tu tiempo de almuerzo ha terminado. ¡Regresa al trabajo!');
+    }
+
+    // Advertencias adicionales cada minuto en los ultimos 5
+    if (lunchSecondsLeft > 0 && lunchSecondsLeft <= 300 && lunchSecondsLeft % 60 === 0) {
+      playBeep(660, 0.2);
+    }
+  }, 1000);
+}
+
+function stopLunchTimer() {
+  if (lunchInterval) { clearInterval(lunchInterval); lunchInterval = null; }
+  document.getElementById('lunchTimer').classList.remove('visible');
+  document.getElementById('lunchWarning').style.display = 'none';
+  document.getElementById('lunchTimer').style.background = '';
+  document.getElementById('lunchTimer').style.borderColor = '';
+}
+
+// Buscar y confirmar colaborador
+async function buscarColaborador() {
   if (busy) return;
+  const id  = document.getElementById('empId').value.trim();
+  const eco = document.getElementById('ecosystem').value;
+  if (!id || !eco) { setStatus('s-warn','⚠️','Ingresa tu ID y selecciona tu ecosistema.'); return; }
+
   busy = true;
-  setAllDisabled(true);
-  setStatus('s-info','⏳','Procesando...');
+  document.getElementById('btnConfirm').disabled = true;
+  setStatus('s-info','⏳','Verificando...');
 
   try {
-    const [ipData, geoData] = await Promise.all([getIP(), getGeo()]);
+    // Verificar colaborador y config de almuerzo en paralelo
+    const [empRes, lunchRes] = await Promise.all([
+      fetch(API + '/api/public/employee/' + id + '?ecosystem=' + encodeURIComponent(eco)),
+      fetch(API + '/api/public/area-lunch/' + encodeURIComponent(eco))
+    ]);
+    const empData   = await empRes.json();
+    const lunchData = await lunchRes.json().catch(() => ({ manual_lunch: false, lunch_minutes: 60 }));
 
-    const res = await fetch(`${API}/api/attendance/mark`, {
-      method: 'POST',
-      headers: { 'Content-Type':'application/json', Authorization:`Bearer ${token}` },
+    if (empData.ok) {
+      confirmedUser = { id, ecosystem: eco, full_name: empData.employee.full_name, cargo: empData.employee.cargo };
+      lunchConfig   = { manual_lunch: lunchData.manual_lunch || false, lunch_minutes: lunchData.lunch_minutes || 60 };
+
+      document.getElementById('userPanel').classList.add('visible');
+      document.getElementById('userName').textContent = empData.employee.full_name;
+      document.getElementById('userMeta').textContent = empData.employee.cargo + ' · ' + eco;
+
+      // Mostrar botones de almuerzo solo si el ecosistema lo permite
+      const lunchBtns = document.getElementById('lunchBtns');
+      lunchBtns.style.display = lunchConfig.manual_lunch ? 'grid' : 'none';
+
+      setAllEnabled(true);
+      const lunchMsg = lunchConfig.manual_lunch
+        ? '\n🍽 Tu area permite marcar almuerzo manualmente (' + lunchConfig.lunch_minutes + ' min).'
+        : '';
+      setStatus('s-ok','✅','Listo ' + empData.employee.full_name.split(' ')[0] + '. Selecciona tu marcacion.' + lunchMsg);
+    } else {
+      confirmedUser = null;
+      setStatus('s-error','⛔', empData.message || 'ID o ecosistema no encontrado.');
+      setAllEnabled(false);
+    }
+  } catch(e) {
+    setStatus('s-error','⛔','Error de conexion.');
+    setAllEnabled(false);
+  }
+  busy = false;
+  document.getElementById('btnConfirm').disabled = false;
+}
+
+// Marcar
+async function marcar(type) {
+  if (busy || !confirmedUser) return;
+  busy = true;
+  setAllEnabled(false);
+
+  const eco = confirmedUser.ecosystem;
+  const bloqueaSin = geoObligatoria(eco);
+  const pideGeo    = requiereGeo(eco);
+
+  if (bloqueaSin) setStatus('s-info','📍','Solicitando ubicacion obligatoria...');
+  else setStatus('s-info','⏳','Registrando...');
+
+  try {
+    const [ipData, geoData] = await Promise.all([
+      getIP(),
+      pideGeo ? getGeo() : Promise.resolve({lat:null,lon:null})
+    ]);
+
+    if (bloqueaSin && (!geoData.lat || !geoData.lon)) {
+      setStatus('s-error','❌','No se pudo obtener ubicacion.\n1. Activa el GPS\n2. Permite ubicacion en el navegador\n3. Reintenta');
+      busy = false; setAllEnabled(true); return;
+    }
+
+    const res = await fetch(API + '/api/public/mark', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
       body: JSON.stringify({
+        employee_id: confirmedUser.id,
+        ecosystem: confirmedUser.ecosystem,
         type,
         lat: geoData.lat, lon: geoData.lon,
         geo_accuracy_m: geoData.accuracy,
@@ -163,21 +340,78 @@ async function mark(type) {
         ip_data: ipData
       })
     });
-    const data = await res.json();
+    const d = await res.json();
 
-    if (data.ok) {
-      setStatus('s-ok','✅', data.message);
-      document.getElementById('btnReset').style.display = 'block';
+    if (d.ok) {
+      const isWarn = d.message && (d.message.includes('Tardanza') || d.message.includes('tarde'));
+      setStatus(isWarn ? 's-warn' : 's-ok', isWarn ? '⚠️' : '✅', d.message);
+
+      // Gestionar timer de almuerzo
+      if (type === 'lunch_out' && lunchConfig.manual_lunch) {
+        startLunchTimer(lunchConfig.lunch_minutes);
+        setAllEnabled(true); // mantener botones activos durante almuerzo
+        busy = false;
+        return;
+      }
+      if (type === 'lunch_in') {
+        stopLunchTimer();
+      }
+      if (type === 'exit') {
+        stopLunchTimer();
+        document.getElementById('btnReset').style.display = 'block';
+        setAllEnabled(false);
+      } else if (type === 'entry') {
+        document.getElementById('btnReset').style.display = 'block';
+        setAllEnabled(true);
+      } else {
+        setAllEnabled(true);
+      }
     } else {
-      const isWarn = data.message?.includes('⚠️') || data.message?.includes('ya tienes');
-      setStatus(isWarn ? 's-warn' : 's-error', isWarn ? '⚠️' : '⛔', data.message);
+      const isWarn = d.message && (d.message.includes('ya tienes') || d.message.includes('cerrada') || d.message.includes('Intervalo') || d.message.includes('maximo'));
+      setStatus(isWarn ? 's-warn' : 's-error', isWarn ? '⚠️' : '⛔', d.message);
+      setAllEnabled(true);
     }
   } catch(e) {
-    setStatus('s-error','⛔','Error de conexión. Verifica tu red e intenta de nuevo.');
+    setStatus('s-error','⛔','Error de conexion.');
+    setAllEnabled(true);
   }
-
   busy = false;
-  setAllDisabled(false);
+}
+
+function resetForm() {
+  confirmedUser = null;
+  lunchConfig = { manual_lunch: false, lunch_minutes: 60 };
+  stopLunchTimer();
+  document.getElementById('empId').value = '';
+  document.getElementById('ecosystem').value = '';
+  document.getElementById('userPanel').classList.remove('visible');
+  document.getElementById('btnReset').style.display = 'none';
+  document.getElementById('lunchBtns').style.display = 'none';
+  setAllEnabled(false);
+  setStatus('s-info','ℹ️','Ingresa tu ID y ecosistema, luego confirma.');
+  document.getElementById('empId').focus();
+}
+
+function setStatus(cls, emoji, text) {
+  const box = document.getElementById('statusBox');
+  box.className = 'status-box ' + cls;
+  box.innerHTML = '<div class="s-emoji">' + emoji + '</div><div id="statusText">' + text + '</div>';
+}
+
+function setAllEnabled(state) {
+  ['btnEntry','btnExit','btnLunchOut','btnLunchIn'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.disabled = !state;
+  });
+}
+
+function requiereGeo(eco) {
+  return ['soporte en sitio','instalaciones','ventas bog','accounting and treasury']
+    .includes((eco||'').toLowerCase().trim());
+}
+function geoObligatoria(eco) {
+  return ['soporte en sitio','ventas bog','accounting and treasury']
+    .includes((eco||'').toLowerCase().trim());
 }
 
 async function getIP() {
@@ -189,39 +423,23 @@ async function getIP() {
 
 async function getGeo() {
   return new Promise(resolve => {
-    if (!navigator.geolocation) { resolve({lat:null,lon:null,accuracy:null}); return; }
+    if (!navigator.geolocation) { resolve({lat:null,lon:null}); return; }
     navigator.geolocation.getCurrentPosition(
       p => resolve({lat:p.coords.latitude, lon:p.coords.longitude, accuracy:p.coords.accuracy}),
-      () => resolve({lat:null,lon:null,accuracy:null}),
+      () => resolve({lat:null,lon:null}),
       {enableHighAccuracy:true, timeout:8000, maximumAge:0}
     );
   });
 }
 
-function setStatus(cls, emoji, text) {
-  const box  = document.getElementById('statusBox');
-  const txt  = document.getElementById('statusText');
-  box.className = `status-box ${cls}`;
-  document.querySelector('.s-emoji').textContent = emoji;
-  txt.textContent = text;
-}
-
-function setAllDisabled(state) {
-  ['btnEntry','btnExit','btnLunchOut','btnLunchIn'].forEach(id => {
-    document.getElementById(id).disabled = state;
-  });
-}
-
-function refreshStatus() {
-  document.getElementById('btnReset').style.display = 'none';
-  loadUserInfo();
-}
-
-function logout() {
-  localStorage.removeItem('kr_token');
-  localStorage.removeItem('kr_user');
-  window.location.href = '/login.html';
-}
+document.getElementById('empId').addEventListener('keydown', e => { if(e.key==='Enter') buscarColaborador(); });
+document.getElementById('ecosystem').addEventListener('change', () => {
+  confirmedUser = null;
+  document.getElementById('userPanel').classList.remove('visible');
+  document.getElementById('lunchBtns').style.display = 'none';
+  setAllEnabled(false);
+  stopLunchTimer();
+});
 </script>
 </body>
 </html>

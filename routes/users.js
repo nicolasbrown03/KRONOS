@@ -332,6 +332,19 @@ router.post('/import/buk', requireAuth, requireRole('super_admin','admin'),
       }
     }
 
+    // SEGUNDO PASO: asignar líderes ahora que TODOS los usuarios existen
+    for (let j = 0; j < rawRows.length; j++) {
+      const raw2 = rawRows[j];
+      let empId2 = String(findCol(raw2, COL_MAP.employee_id) || '').trim().replace(/[.,]/g, '');
+      if (!empId2) continue;
+      const leaderName2 = String(findCol(raw2, COL_MAP.leader) || '').trim();
+      if (!leaderName2) continue;
+      const lid = leaderMap[leaderName2] || findLeaderByName(leaderName2, leaderNameMap, leaderRows) || null;
+      if (lid) {
+        await db.query('UPDATE users SET leader_id=$1 WHERE employee_id=$2 AND (leader_id IS NULL OR leader_id != $1)', [lid, empId2]).catch(() => {});
+      }
+    }
+
     // Registrar importación
     await db.query(
       `INSERT INTO buk_imports (id, filename, total_rows, created_rows, updated_rows, error_rows, errors, imported_by)

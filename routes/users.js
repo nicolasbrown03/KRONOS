@@ -163,73 +163,6 @@ router.put('/:id', requireAuth, requireRole('super_admin','admin'), async (req, 
 });
 
 // ─────────────────────────────────────────────────────────────
-// DELETE /api/users/bulk-delete — borrar TODOS los colaboradores
-// Solo super_admin. Conserva admins y lideres. Borra marcaciones.
-// ─────────────────────────────────────────────────────────────
-router.delete('/bulk-delete', requireAuth, requireRole('super_admin'), async (req, res) => {
-  try {
-    const { confirm } = req.body;
-    if (confirm !== 'CONFIRMAR_BORRADO') {
-      return res.status(400).json({ ok: false, message: 'Debes enviar confirm: "CONFIRMAR_BORRADO".' });
-    }
-
-    // Obtener IDs de empleados a borrar (solo role=employee, no admins ni lideres)
-    const { rows: empRows } = await db.query(
-      `SELECT id FROM users WHERE role = 'employee'`
-    );
-    const empIds = empRows.map(r => r.id);
-
-    if (!empIds.length) {
-      return res.json({ ok: true, message: 'No habia colaboradores para borrar.', deleted: 0 });
-    }
-
-    // Borrar en orden por dependencias
-    await db.query(`DELETE FROM audit_logs      WHERE actor_id = ANY($1)`, [empIds]);
-    await db.query(`DELETE FROM corrections     WHERE requester_id = ANY($1) OR target_user_id = ANY($1)`, [empIds]);
-    await db.query(`DELETE FROM payroll_summaries WHERE user_id = ANY($1)`, [empIds]);
-    await db.query(`DELETE FROM attendance_sessions WHERE user_id = ANY($1)`, [empIds]);
-    await db.query(`DELETE FROM attendances     WHERE user_id = ANY($1)`, [empIds]);
-    await db.query(`DELETE FROM buk_imports     WHERE imported_by = ANY($1)`, [empIds]);
-    await db.query(`UPDATE users SET leader_id = NULL WHERE leader_id = ANY($1)`, [empIds]);
-    await db.query(`DELETE FROM users WHERE id = ANY($1)`, [empIds]);
-
-    await auditLog(db, req.user, 'BULK_DELETE_EMPLOYEES', 'users', null, null,
-      { deleted_count: empIds.length, executed_by: req.user.full_name });
-
-    res.json({ ok: true, message: `✅ ${empIds.length} colaboradores eliminados. Ahora puedes importar el archivo correcto desde BUK.`, deleted: empIds.length });
-  } catch (err) {
-    console.error('bulk-delete error:', err.message);
-    res.status(500).json({ ok: false, message: 'Error al borrar: ' + err.message });
-  }
-});
-
-// ─────────────────────────────────────────────────────────────
-// DELETE /api/users/:id — borrar un colaborador individual
-// ─────────────────────────────────────────────────────────────
-router.delete('/:id', requireAuth, requireRole('super_admin','admin'), async (req, res) => {
-  try {
-    const { rows } = await db.query('SELECT full_name, role FROM users WHERE id=$1', [req.params.id]);
-    if (!rows.length) return res.status(404).json({ ok: false, message: 'Usuario no encontrado.' });
-    if (rows[0].role === 'super_admin') return res.status(403).json({ ok: false, message: 'No se puede borrar un super admin.' });
-
-    const ids = [req.params.id];
-    await db.query(`DELETE FROM audit_logs       WHERE actor_id = ANY($1)`, [ids]);
-    await db.query(`DELETE FROM corrections      WHERE requester_id = ANY($1) OR target_user_id = ANY($1)`, [ids]);
-    await db.query(`DELETE FROM payroll_summaries WHERE user_id = ANY($1)`, [ids]);
-    await db.query(`DELETE FROM attendance_sessions WHERE user_id = ANY($1)`, [ids]);
-    await db.query(`DELETE FROM attendances      WHERE user_id = ANY($1)`, [ids]);
-    await db.query(`UPDATE users SET leader_id = NULL WHERE leader_id = ANY($1)`, [ids]);
-    await db.query(`DELETE FROM users WHERE id = ANY($1)`, [ids]);
-
-    await auditLog(db, req.user, 'USER_DELETED', 'user', req.params.id, { name: rows[0].full_name }, null);
-    res.json({ ok: true, message: rows[0].full_name + ' eliminado correctamente.' });
-  } catch (err) {
-    console.error('delete user error:', err.message);
-    res.status(500).json({ ok: false, message: 'Error al borrar: ' + err.message });
-  }
-});
-
-// ─────────────────────────────────────────────────────────────
 // POST /api/users/reset-password/:id
 // ─────────────────────────────────────────────────────────────
 router.post('/reset-password/:id', requireAuth, requireRole('super_admin','admin'), async (req, res) => {
@@ -281,23 +214,23 @@ router.post('/import/buk', requireAuth, requireRole('super_admin','admin'),
     const COL_MAP = {
       employee_id: ['cédula','cedula','rut','id colaborador','id empleado','numero documento',
                     'no. documento','documento','código colaborador'],
-      full_name:   ['nombre completo','nombre y apellido','nombres y apellidos','empleado','colaborador','nombre colaborador','trabajador'],
+      full_name:   ['empleado','nombre completo','nombres y apellidos','nombre colaborador'],
       first_name:  ['nombres','nombre'],
       last_name:   ['apellidos','apellido'],
-      cargo:       ['cargo','puesto','posición','posicion','rol'],
-      area:        ['área','area','departamento','gerencia','ecosistema','nombre ecosistema'],
+      cargo:       ['cargo','puesto','posición','posicion'],
+      area:        ['nombre ecosistema','área','area','departamento','gerencia'],
       email:       ['email','correo','correo electronico','correo electrónico'],
-      leader:      ['supervisor','lider','líder','jefe directo','responsable','líder de ecosistema','lider de ecosistema'],
+      leader:      ['líder de ecosistema','lider de ecosistema','supervisor','jefe directo','responsable'],
       cost_center: ['centro de costo','cc','centrocosto'],
       start_date:  ['fecha inicio','fecha ingreso','fecha de ingreso'],
       buk_id:      ['id buk','código buk','codigo buk','id interno'],
-      sede:        ['sede','ubicación','ubicacion','ciudad','municipio'],
+      sede:        ['municipio','sede','ubicación','ubicacion','ciudad'],
     };
 
     function findCol(row, keys) {
       const rowKeys = Object.keys(row).map(k => ({ orig: k, norm: k.toLowerCase().trim() }));
       for (const key of keys) {
-        const found = rowKeys.find(k => k.norm.includes(key) || key.includes(k.norm));
+        const found = rowKeys.find(k => k.norm.includes(key) || (k.norm.length >= 4 && key.includes(k.norm)));
         if (found) return row[found.orig];
       }
       return '';
@@ -416,20 +349,40 @@ router.get('/import/history', requireAuth, requireRole('super_admin','admin'), a
 // ─────────────────────────────────────────────────────────────
 async function resolveRelations(areaName, sedeName, shiftName, leaderEmpId) {
   let area_id = null, sede_id = null, shift_id = null, leader_id = null;
+
   if (areaName) {
     const r = await db.query('SELECT id FROM areas WHERE name ILIKE $1 LIMIT 1', [areaName]);
-    if (r.rows.length) { area_id = r.rows[0].id; }
-    else { const ins = await db.query('INSERT INTO areas (name) VALUES ($1) RETURNING id', [areaName]); area_id = ins.rows[0].id; }
+    if (r.rows.length) {
+      area_id = r.rows[0].id;
+    } else {
+      // Crear área si no existe
+      const ins = await db.query('INSERT INTO areas (name) VALUES ($1) RETURNING id', [areaName]);
+      area_id = ins.rows[0].id;
+    }
   }
-  if (sedeName) { const r = await db.query('SELECT id FROM sedes WHERE name ILIKE $1 LIMIT 1', [sedeName]); if (r.rows.length) sede_id = r.rows[0].id; }
-  if (shiftName) { const r = await db.query('SELECT id FROM shifts WHERE name ILIKE $1 LIMIT 1', [shiftName]); if (r.rows.length) shift_id = r.rows[0].id; }
-  if (leaderEmpId) { const r = await db.query('SELECT id FROM users WHERE employee_id=$1 LIMIT 1', [leaderEmpId]); if (r.rows.length) leader_id = r.rows[0].id; }
+
+  if (sedeName) {
+    const r = await db.query('SELECT id FROM sedes WHERE name ILIKE $1 LIMIT 1', [sedeName]);
+    if (r.rows.length) sede_id = r.rows[0].id;
+  }
+
+  if (shiftName) {
+    const r = await db.query('SELECT id FROM shifts WHERE name ILIKE $1 LIMIT 1', [shiftName]);
+    if (r.rows.length) shift_id = r.rows[0].id;
+  }
+
+  if (leaderEmpId) {
+    const r = await db.query('SELECT id FROM users WHERE employee_id=$1 LIMIT 1', [leaderEmpId]);
+    if (r.rows.length) leader_id = r.rows[0].id;
+  }
+
   return { area_id, sede_id, shift_id, leader_id };
 }
 
 async function auditLog(db, actor, action, entityType, entityId, before, after) {
   await db.query(
-    `INSERT INTO audit_logs (actor_id, actor_name, actor_role, action, entity_type, entity_id, payload_before, payload_after) VALUES ($1,$2,$3,$4,$5,$6,$7,$8)`,
+    `INSERT INTO audit_logs (actor_id, actor_name, actor_role, action, entity_type, entity_id, payload_before, payload_after)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8)`,
     [actor.id, actor.full_name, actor.role, action, entityType, entityId,
      before ? JSON.stringify(before) : null, after ? JSON.stringify(after) : null]
   ).catch(() => {});

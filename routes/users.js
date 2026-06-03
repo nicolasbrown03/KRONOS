@@ -250,6 +250,20 @@ router.post('/import/buk', requireAuth, requireRole('super_admin','admin'),
       leaderMap[l.employee_id] = l.id;
       if (l.full_name) leaderNameMap[l.full_name.toLowerCase().trim()] = l.id;
     });
+    function findLeaderByName(name, nameMap, users) {
+      if (!name) return null;
+      const norm = name.toLowerCase().trim();
+      if (nameMap[norm]) return nameMap[norm];
+      const words = norm.split(/\s+/).filter(w => w.length > 2);
+      if (words.length < 2) return null;
+      for (const u of users) {
+        if (!u.full_name) continue;
+        const uWords = u.full_name.toLowerCase().split(/\s+/);
+        const matches = words.filter(w => uWords.some(uw => uw.includes(w) || w.includes(uw)));
+        if (matches.length >= Math.min(words.length, 3)) return u.id;
+      }
+      return null;
+    }
 
     const results = { created: 0, updated: 0, errors: [] };
     const importId = require('crypto').randomUUID();
@@ -285,7 +299,7 @@ router.post('/import/buk', requireAuth, requireRole('super_admin','admin'),
         }
 
         const { area_id, sede_id } = await resolveRelations(areaName, sedeName, null, null);
-        const leader_id = leaderMap[leaderEmpId] || leaderNameMap[leaderEmpId.toLowerCase().trim()] || null;
+        const leader_id = leaderMap[leaderEmpId] || findLeaderByName(leaderEmpId, leaderNameMap, leaderRows) || null;
 
         // Insertar o actualizar
         const existing = await db.query('SELECT id FROM users WHERE employee_id=$1', [empId]);
@@ -301,7 +315,7 @@ router.post('/import/buk', requireAuth, requireRole('super_admin','admin'),
           );
           const newUserId = (await db.query('SELECT id FROM users WHERE employee_id=$1',[empId])).rows[0]?.id;
           leaderMap[empId] = newUserId;
-          if (newUserId && fullName) leaderNameMap[fullName.toLowerCase().trim()] = newUserId;
+          if (newUserId && fullName) { leaderNameMap[fullName.toLowerCase().trim()] = newUserId; leaderRows.push({ id: newUserId, employee_id: empId, full_name: fullName }); }
           results.created++;
         } else {
           // ACTUALIZAR

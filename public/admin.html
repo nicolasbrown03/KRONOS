@@ -927,16 +927,19 @@ async function sendAlertEmails() {
 // ─────────────────────── CONFIG AREAS ───────────────────────
 // Verificar si un nombre es un area real (no un nombre de persona del bug de importacion)
 function isValidArea(name) {
+  if (!name) return false;
+  const n = name.toLowerCase().trim();
+  // Lista de ecosistemas validos conocidos
   const valid = ['instalaciones','sac','ventas','ventas bog','accounting and treasury',
     'soporte n2','soporte en sitio','cedi','relevamiento','noc','rrhh',
-    'tecnologia','tecnología','gerencia','direct sales','noc'];
-  const n = (name||'').toLowerCase().trim();
-  // Verificar si esta en la lista conocida
+    'tecnologia','tecnología','gerencia','direct sales'];
   if (valid.includes(n)) return true;
-  // Rechazar si parece nombre de persona: 3+ palabras con mayusculas tipicas de nombres colombianos
-  const words = n.split(' ').filter(w => w.length > 1);
-  if (words.length >= 3) return false; // nombre + apellido + apellido = persona
-  if (words.length === 2 && /^[a-záéíóúñ]+$/.test(words[0]) && /^[a-záéíóúñ]+$/.test(words[1]) && words[0].length > 3 && words[1].length > 3) return false;
+  // Rechazar si tiene 3 o más palabras (tipico de nombres colombianos)
+  const words = n.split(/\s+/).filter(w => w.length > 0);
+  if (words.length >= 3) return false;
+  // Rechazar si tiene 2 palabras y ambas son solo letras (nombre + apellido)
+  if (words.length === 2 && words.every(w => /^[a-záéíóúñüà-ÿ]+$/i.test(w)) && words.every(w => w.length > 2)) return false;
+  // Aceptar si tiene menos de 3 palabras y no parece nombre
   return true;
 }
 
@@ -1066,45 +1069,6 @@ function openAddShift(){
   const tol=prompt('Tolerancia entrada (minutos):','5');
   api('/api/shifts',{method:'POST',body:JSON.stringify({name,start_time:start,end_time:end,tolerance_in_min:parseInt(tol)||5})})
     .then(r=>r.json()).then(d=>{toast(d.ok?'Turno "'+name+'" creado':d.message,d.ok);if(d.ok)loadShiftsConfig();});
-}
-
-// Verificar si un nombre es un area real (no un nombre de persona del bug de importacion)
-function isValidArea(name) {
-  const valid = ['instalaciones','sac','ventas','ventas bog','accounting and treasury',
-    'soporte n2','soporte en sitio','cedi','relevamiento','noc','rrhh',
-    'tecnologia','tecnología','gerencia','direct sales','noc'];
-  const n = (name||'').toLowerCase().trim();
-  // Verificar si esta en la lista conocida
-  if (valid.includes(n)) return true;
-  // Rechazar si parece nombre de persona: 3+ palabras con mayusculas tipicas de nombres colombianos
-  const words = n.split(' ').filter(w => w.length > 1);
-  if (words.length >= 3) return false; // nombre + apellido + apellido = persona
-  if (words.length === 2 && /^[a-záéíóúñ]+$/.test(words[0]) && /^[a-záéíóúñ]+$/.test(words[1]) && words[0].length > 3 && words[1].length > 3) return false;
-  return true;
-}
-
-async function loadAreaConfig() {
-  const res = await api('/api/areas');
-  const d = await res.json();
-  const sel = document.getElementById('cfgAreaSel');
-  if (!sel) return;
-  sel.innerHTML = '<option value="">Selecciona...</option>';
-  (d.areas||[]).forEach(a => {
-    const opt = document.createElement('option');
-    opt.value = a.id; opt.textContent = a.name;
-    opt.dataset.maxTurns    = a.max_turns || 1;
-    opt.dataset.minHours    = a.min_hours_between || 1;
-    opt.dataset.geoReq      = a.geo_required_override || false;
-    opt.dataset.manualLunch = a.manual_lunch || false;
-    opt.dataset.lunchMinutes= a.lunch_minutes || 60;
-    sel.appendChild(opt);
-  });
-  sel.onchange = function() {
-    const opt = sel.options[sel.selectedIndex];
-    document.getElementById('cfgMaxTurns').value = opt.dataset.maxTurns || 1;
-    document.getElementById('cfgMinHours').value  = opt.dataset.minHours || 1;
-    document.getElementById('cfgGeoReq').checked  = opt.dataset.geoReq === 'true';
-  };
 }
 
 async function saveAreaConfig() {

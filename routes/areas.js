@@ -6,13 +6,22 @@ const router  = express.Router();
 // GET /api/areas — todas las áreas con config de almuerzo
 router.get('/', requireAuth, async (req, res) => {
   try {
-    const { rows } = await db.query(
-      `SELECT a.*, s.manual_lunch, s.lunch_minutes, s.max_turns,
-              s.min_hours_between, s.geo_required_override
-       FROM areas a
-       LEFT JOIN area_settings s ON s.area_id = a.id
-       ORDER BY a.name`
-    );
+    // Intentar con area_settings (puede no existir aun)
+    let rows;
+    try {
+      const r = await db.query(
+        `SELECT a.*, s.manual_lunch, s.lunch_minutes, s.max_turns,
+                s.min_hours_between, s.geo_required_override
+         FROM areas a
+         LEFT JOIN area_settings s ON s.area_id = a.id
+         ORDER BY a.name`
+      );
+      rows = r.rows;
+    } catch(e) {
+      // area_settings no existe todavia, devolver solo areas
+      const r = await db.query('SELECT * FROM areas ORDER BY name');
+      rows = r.rows;
+    }
     res.json({ ok: true, areas: rows });
   } catch (err) {
     res.status(500).json({ ok: false, message: 'Error al obtener areas.' });

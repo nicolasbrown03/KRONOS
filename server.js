@@ -139,75 +139,6 @@ app.get('/api/health', async (req, res) => {
 });
 
 // ─────────────────────────────────────────────────────────────
-// Endpoints PUBLICOS (sin autenticacion) para la pantalla de marcacion
-app.get('/api/public/areas', async (req, res) => {
-  try {
-    // Solo areas que tienen usuarios activos (evita basura de importaciones con bugs)
-    const { rows } = await db.query(
-      `SELECT DISTINCT a.name FROM areas a
-       INNER JOIN users u ON u.area_id = a.id AND u.status = 'active'
-       WHERE a.name NOT SIMILAR TO '%[0-9]%'
-       ORDER BY a.name`
-    );
-    const areas = rows.map(r => r.name);
-    res.json({ ok: true, areas: areas.length ? areas : [] });
-  } catch(e) { res.json({ ok: true, areas: [] }); }
-});
-
-app.get('/api/public/area-lunch/:area_name', async (req, res) => {
-  try {
-    const area = decodeURIComponent(req.params.area_name);
-    const { rows } = await db.query(
-      `SELECT s.manual_lunch, s.lunch_minutes FROM areas a
-       LEFT JOIN area_settings s ON s.area_id = a.id
-       WHERE LOWER(a.name) = LOWER($1) LIMIT 1`, [area]
-    );
-    const cfg = rows[0] || {};
-    res.json({ ok: true, manual_lunch: cfg.manual_lunch || false, lunch_minutes: cfg.lunch_minutes || 60 });
-  } catch(e) { res.json({ ok: true, manual_lunch: false, lunch_minutes: 60 }); }
-});
-
-app.get('/api/public/employee/:employee_id', async (req, res) => {
-  try {
-    const eco = req.query.ecosystem || '';
-    const { rows } = await db.query(
-      `SELECT u.employee_id, u.full_name, u.cargo, u.status, a.name AS area
-       FROM users u LEFT JOIN areas a ON a.id = u.area_id
-       WHERE u.employee_id=$1 AND ($2='' OR LOWER(a.name)=LOWER($2)) LIMIT 1`,
-      [String(req.params.employee_id).trim(), eco]
-    );
-    if (!rows.length) return res.status(404).json({ ok: false, message: 'Colaborador no encontrado.' });
-    if (rows[0].status !== 'active') return res.status(403).json({ ok: false, message: 'Colaborador inactivo.' });
-    res.json({ ok: true, employee: rows[0] });
-  } catch(e) { res.status(500).json({ ok: false, message: 'Error.' }); }
-});
-
-app.post('/api/public/mark', async (req, res) => {
-  try {
-    const { employee_id, ecosystem, type, lat, lon, geo_accuracy_m, ip_address, ip_data } = req.body;
-    if (!employee_id || !ecosystem || !type) return res.status(400).json({ ok: false, message: 'Datos incompletos.' });
-    const { rows } = await db.query(
-      `SELECT u.id, u.full_name, u.role, u.status FROM users u
-       LEFT JOIN areas a ON a.id = u.area_id
-       WHERE u.employee_id=$1 AND LOWER(a.name)=LOWER($2) LIMIT 1`,
-      [String(employee_id).trim(), String(ecosystem).trim()]
-    );
-    if (!rows.length) return res.status(404).json({ ok: false, message: 'ID o ecosistema no encontrado.' });
-    const user = rows[0];
-    if (user.status !== 'active') return res.status(403).json({ ok: false, message: 'Usuario inactivo.' });
-    const jwt = require('jsonwebtoken');
-    const tempToken = jwt.sign(
-      { id: user.id, employee_id: String(employee_id).trim(), full_name: user.full_name, role: user.role },
-      process.env.JWT_SECRET, { expiresIn: '10m' }
-    );
-    req.user = { id: user.id, employee_id: String(employee_id).trim(), full_name: user.full_name, role: user.role };
-    req.body = { type, lat, lon, geo_accuracy_m, ip_address, ip_data };
-    req.headers = { ...req.headers, authorization: 'Bearer ' + tempToken };
-    const attRouter = require('./routes/attendance');
-    attRouter.handle(req, res, () => res.status(404).json({ ok: false }));
-  } catch(e) { console.error('public mark:', e.message); res.status(500).json({ ok: false, message: 'Error.' }); }
-});
-
 // SPA fallback — todas las rutas no-API sirven el frontend
 // ─────────────────────────────────────────────────────────────
 app.get('*', (req, res) => {
@@ -265,6 +196,11 @@ async function runMigrations() {
     `ALTER TABLE area_settings ADD COLUMN IF NOT EXISTS lunch_minutes INTEGER DEFAULT 60`,
     `CREATE TABLE IF NOT EXISTS excluded_roles (cargo VARCHAR(80) PRIMARY KEY, reason TEXT, created_at TIMESTAMPTZ DEFAULT NOW())`,
     `ALTER TABLE attendance_sessions ADD COLUMN IF NOT EXISTS turn_number INTEGER DEFAULT 1`,
+    `ALTER TABLE users ADD COLUMN IF NOT EXISTS leader_email VARCHAR(120)`,
+    `CREATE TABLE IF NOT EXISTS area_settings (area_id UUID PRIMARY KEY REFERENCES areas(id), manual_lunch BOOLEAN DEFAULT false, lunch_minutes INTEGER DEFAULT 60, max_turns INTEGER DEFAULT 1, min_hours_between DECIMAL(4,2) DEFAULT 1.0, geo_required_override BOOLEAN DEFAULT false, exclude_from_attendance BOOLEAN DEFAULT false, updated_at TIMESTAMPTZ DEFAULT NOW())`,
+    `ALTER TABLE area_settings ADD COLUMN IF NOT EXISTS manual_lunch BOOLEAN DEFAULT false`,
+    `ALTER TABLE area_settings ADD COLUMN IF NOT EXISTS lunch_minutes INTEGER DEFAULT 60`,
+    `ALTER TABLE area_settings ADD COLUMN IF NOT EXISTS exclude_from_attendance BOOLEAN DEFAULT false`,
     `INSERT INTO area_settings (area_id, manual_lunch, lunch_minutes)
      SELECT a.id, true, 60 FROM areas a WHERE LOWER(a.name) = 'accounting and treasury'
      ON CONFLICT (area_id) DO UPDATE SET manual_lunch = true`

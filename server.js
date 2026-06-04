@@ -142,8 +142,15 @@ app.get('/api/health', async (req, res) => {
 // Endpoints PUBLICOS (sin autenticacion) para la pantalla de marcacion
 app.get('/api/public/areas', async (req, res) => {
   try {
-    const { rows } = await db.query('SELECT name FROM areas ORDER BY name');
-    res.json({ ok: true, areas: rows.map(r => r.name) });
+    // Solo areas que tienen usuarios activos (evita basura de importaciones con bugs)
+    const { rows } = await db.query(
+      `SELECT DISTINCT a.name FROM areas a
+       INNER JOIN users u ON u.area_id = a.id AND u.status = 'active'
+       WHERE a.name NOT SIMILAR TO '%[0-9]%'
+       ORDER BY a.name`
+    );
+    const areas = rows.map(r => r.name);
+    res.json({ ok: true, areas: areas.length ? areas : [] });
   } catch(e) { res.json({ ok: true, areas: [] }); }
 });
 

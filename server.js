@@ -139,6 +139,68 @@ app.get('/api/health', async (req, res) => {
 });
 
 // ─────────────────────────────────────────────────────────────
+// Endpoints PUBLICOS (sin autenticacion) para la pantalla de marcacion
+app.get('/api/public/areas', async (req, res) => {
+  try {
+    const { rows } = await db.query('SELECT name FROM areas ORDER BY name');
+    res.json({ ok: true, areas: rows.map(r => r.name) });
+  } catch(e) { res.json({ ok: true, areas: [] }); }
+});
+
+app.get('/api/public/area-lunch/:area_name', async (req, res) => {
+  try {
+    const area = decodeURIComponent(req.params.area_name);
+    const { rows } = await db.query(
+      `SELECT s.manual_lunch, s.lunch_minutes FROM areas a
+       LEFT JOIN area_settings s ON s.area_id = a.id
+       WHERE LOWER(a.name) = LOWER($1) LIMIT 1`, [area]
+    );
+    const cfg = rows[0] || {};
+    res.json({ ok: true, manual_lunch: cfg.manual_lunch || false, lunch_minutes: cfg.lunch_minutes || 60 });
+  } catch(e) { res.json({ ok: true, manual_lunch: false, lunch_minutes: 60 }); }
+});
+
+app.get('/api/public/employee/:employee_id', async (req, res) => {
+  try {
+    const eco = req.query.ecosystem || '';
+    const { rows } = await db.query(
+      `SELECT u.employee_id, u.full_name, u.cargo, u.status, a.name AS area
+       FROM users u LEFT JOIN areas a ON a.id = u.area_id
+       WHERE u.employee_id=$1 AND ($2='' OR LOWER(a.name)=LOWER($2)) LIMIT 1`,
+      [String(req.params.employee_id).trim(), eco]
+    );
+    if (!rows.length) return res.status(404).json({ ok: false, message: 'Colaborador no encontrado.' });
+    if (rows[0].status !== 'active') return res.status(403).json({ ok: false, message: 'Colaborador inactivo.' });
+    res.json({ ok: true, employee: rows[0] });
+  } catch(e) { res.status(500).json({ ok: false, message: 'Error.' }); }
+});
+
+app.post('/api/public/mark', async (req, res) => {
+  try {
+    const { employee_id, ecosystem, type, lat, lon, geo_accuracy_m, ip_address, ip_data } = req.body;
+    if (!employee_id || !ecosystem || !type) return res.status(400).json({ ok: false, message: 'Datos incompletos.' });
+    const { rows } = await db.query(
+      `SELECT u.id, u.full_name, u.role, u.status FROM users u
+       LEFT JOIN areas a ON a.id = u.area_id
+       WHERE u.employee_id=$1 AND LOWER(a.name)=LOWER($2) LIMIT 1`,
+      [String(employee_id).trim(), String(ecosystem).trim()]
+    );
+    if (!rows.length) return res.status(404).json({ ok: false, message: 'ID o ecosistema no encontrado.' });
+    const user = rows[0];
+    if (user.status !== 'active') return res.status(403).json({ ok: false, message: 'Usuario inactivo.' });
+    const jwt = require('jsonwebtoken');
+    const tempToken = jwt.sign(
+      { id: user.id, employee_id: String(employee_id).trim(), full_name: user.full_name, role: user.role },
+      process.env.JWT_SECRET, { expiresIn: '10m' }
+    );
+    req.user = { id: user.id, employee_id: String(employee_id).trim(), full_name: user.full_name, role: user.role };
+    req.body = { type, lat, lon, geo_accuracy_m, ip_address, ip_data };
+    req.headers = { ...req.headers, authorization: 'Bearer ' + tempToken };
+    const attRouter = require('./routes/attendance');
+    attRouter.handle(req, res, () => res.status(404).json({ ok: false }));
+  } catch(e) { console.error('public mark:', e.message); res.status(500).json({ ok: false, message: 'Error.' }); }
+});
+
 // SPA fallback — todas las rutas no-API sirven el frontend
 // ─────────────────────────────────────────────────────────────
 app.get('*', (req, res) => {

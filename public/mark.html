@@ -3,442 +3,347 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>KRONOS 3.0 — Marcacion</title>
+<title>KRONOS 3.0</title>
 <style>
-:root{--pri:#3b82f6;--pri-d:#1d4ed8;--ok:#10b981;--ok-d:#059669;
-      --warn:#f59e0b;--err:#ef4444;--bg:#0a0e18;--card:#fff}
 *{box-sizing:border-box;margin:0;padding:0}
 body{min-height:100vh;display:flex;align-items:center;justify-content:center;
-  background:var(--bg);font-family:'Segoe UI',Arial,sans-serif;padding:16px}
-.shell{width:100%;max-width:440px}
-.card{background:var(--card);border-radius:22px;padding:24px;
-  box-shadow:0 24px 60px rgba(0,0,0,.45)}
-.header{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px}
-.header h2{font-size:16px;font-weight:800;color:#0a0e18}
-.time-badge{font-size:13px;font-weight:700;background:#f1f5f9;padding:5px 10px;
-  border-radius:20px;color:#334155;font-variant-numeric:tabular-nums}
-.panel{margin-bottom:14px;padding:16px;border-radius:14px;background:#f8fafc;border:1px solid #e2e8f0}
-.panel-title{font-size:11px;font-weight:700;text-transform:uppercase;color:#334155;margin-bottom:10px}
-.field{margin-bottom:12px}
-.field label{display:block;font-size:12px;font-weight:700;color:#0f172a;margin-bottom:5px}
-.field input,.field select{width:100%;padding:12px 14px;border-radius:12px;
-  border:1.5px solid #e2e8f0;background:#fff;color:#0f172a;font-size:15px;outline:none}
-.btn-confirm{width:100%;padding:13px;border:none;border-radius:12px;font-size:14px;
-  font-weight:700;cursor:pointer;background:linear-gradient(180deg,#475569,#334155);
-  color:#fff;margin-top:8px}
-.user-ok{background:#ecfdf5;border:1px solid #bbf7d0;border-radius:12px;
-  padding:12px 14px;margin-bottom:14px;display:none}
-.user-ok.visible{display:block}
-.user-name{font-size:15px;font-weight:700;color:#065f46}
-.user-meta{font-size:12px;color:#047857;margin-top:2px}
-.status-box{border-radius:14px;padding:13px 15px;margin-bottom:14px;display:flex;
-  align-items:flex-start;gap:10px;min-height:56px;font-size:14px;font-weight:600;
-  white-space:pre-wrap;line-height:1.4}
-.s-info {background:#eef2ff;border:1px solid #c7d2fe;color:#1e293b}
-.s-ok   {background:#ecfdf5;border:1px solid #bbf7d0;color:#065f46}
-.s-warn {background:#fff7ed;border:1px solid #fed7aa;color:#9a3412}
-.s-error{background:#fff1f2;border:1px solid #fecdd3;color:#9f1239}
-.s-emoji{font-size:18px;flex:0 0 22px;margin-top:1px}
-/* Botones de marcacion */
-.btns{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px}
-.btns-lunch{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}
-button{border:none;border-radius:12px;font-size:14px;font-weight:700;cursor:pointer;
-  padding:13px 10px;transition:opacity .15s,transform .05s}
-button:active{transform:translateY(1px)}
-button:disabled{opacity:.4;cursor:not-allowed}
-.btn-entry {background:linear-gradient(180deg,var(--pri),var(--pri-d));color:#fff}
-.btn-exit  {background:linear-gradient(180deg,var(--ok),var(--ok-d));color:#fff}
-.btn-lunch-out{background:#f59e0b;color:#fff;font-size:13px}
-.btn-lunch-in {background:#8b5cf6;color:#fff;font-size:13px}
-.btn-reset{width:100%;background:#f8fafc;color:#64748b;border:1px solid #e2e8f0;
-  font-size:13px;margin-top:4px;display:none}
-/* Timer de almuerzo */
-.lunch-timer{display:none;background:#fffbeb;border:1px solid #fbbf24;border-radius:12px;
-  padding:12px 14px;margin-bottom:10px;text-align:center}
-.lunch-timer.visible{display:block}
-.lunch-time-display{font-size:28px;font-weight:800;color:#92400e;font-variant-numeric:tabular-nums}
-.lunch-time-label{font-size:12px;color:#78350f;margin-top:2px}
-.lunch-time-warning{font-size:13px;color:#ef4444;font-weight:700;margin-top:4px;display:none}
-.footer-note{padding:11px 13px;border-radius:12px;background:rgba(248,250,252,.9);
-  border:1px dashed #cbd5e1;color:#64748b;font-size:12px;line-height:1.5}
-.admin-link{font-size:12px;color:#94a3b8;text-align:center;margin-top:12px}
-.admin-link a{color:#3b82f6;text-decoration:none}
+  background:linear-gradient(135deg,#0a0e18 0%,#111827 100%);
+  font-family:'Segoe UI',system-ui,-apple-system,sans-serif;padding:16px}
+.card{background:#fff;border-radius:24px;padding:28px;width:100%;max-width:420px;
+  box-shadow:0 32px 80px rgba(0,0,0,.5)}
+/* Header */
+.brand{display:flex;align-items:center;justify-content:space-between;margin-bottom:24px}
+.brand-name{display:flex;align-items:center;gap:8px;font-size:20px;font-weight:900;color:#0a0e18;letter-spacing:-.5px}
+.brand-icon{width:32px;height:32px;background:linear-gradient(135deg,#3b82f6,#1d4ed8);
+  border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:16px}
+.clock-badge{background:#f1f5f9;border-radius:20px;padding:6px 12px;font-size:13px;
+  font-weight:700;color:#334155;font-variant-numeric:tabular-nums;letter-spacing:.02em}
+/* Sección de identificación */
+.section{background:#f8fafc;border-radius:16px;padding:18px;margin-bottom:16px;border:1px solid #e2e8f0}
+.section-title{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.1em;
+  color:#94a3b8;margin-bottom:14px}
+.field{margin-bottom:14px}
+.field:last-child{margin-bottom:0}
+.field label{display:block;font-size:12px;font-weight:700;color:#374151;margin-bottom:6px}
+.field input,.field select{width:100%;padding:13px 16px;border-radius:12px;
+  border:1.5px solid #e2e8f0;background:#fff;color:#0f172a;font-size:15px;
+  outline:none;transition:border-color .15s,box-shadow .15s;-webkit-appearance:none}
+.field input:focus,.field select:focus{border-color:#3b82f6;box-shadow:0 0 0 3px rgba(59,130,246,.1)}
+.field select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%2364748b' stroke-width='2' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:right 14px center;padding-right:36px}
+/* Botón confirmar */
+.btn-confirm{width:100%;padding:15px;border:none;border-radius:14px;font-size:15px;
+  font-weight:800;cursor:pointer;letter-spacing:.01em;
+  background:linear-gradient(135deg,#1e293b,#0f172a);color:#fff;
+  box-shadow:0 8px 24px rgba(15,23,42,.3);transition:transform .1s,box-shadow .15s;
+  display:flex;align-items:center;justify-content:center;gap:8px}
+.btn-confirm:hover{box-shadow:0 12px 32px rgba(15,23,42,.4)}
+.btn-confirm:active{transform:translateY(1px)}
+.btn-confirm:disabled{opacity:.5;cursor:not-allowed}
+/* Tarjeta de colaborador confirmado */
+.user-card{background:linear-gradient(135deg,#ecfdf5,#d1fae5);border:1.5px solid #6ee7b7;
+  border-radius:14px;padding:14px 16px;margin-bottom:16px;display:none}
+.user-card.visible{display:block}
+.user-name-display{font-size:16px;font-weight:800;color:#065f46}
+.user-meta-display{font-size:12px;color:#047857;margin-top:3px}
+/* Status box */
+.status{border-radius:14px;padding:14px 16px;margin-bottom:16px;display:flex;
+  align-items:flex-start;gap:10px;font-size:14px;font-weight:600;line-height:1.4;
+  white-space:pre-wrap}
+.s-info {background:#eff6ff;border:1.5px solid #bfdbfe;color:#1e40af}
+.s-ok   {background:#ecfdf5;border:1.5px solid #6ee7b7;color:#065f46}
+.s-warn {background:#fffbeb;border:1.5px solid #fcd34d;color:#92400e}
+.s-error{background:#fff1f2;border:1.5px solid #fecdd3;color:#9f1239}
+.s-icon {font-size:18px;flex:0 0 22px;margin-top:1px}
+/* Timer almuerzo */
+.lunch-box{display:none;background:linear-gradient(135deg,#fffbeb,#fef3c7);
+  border:1.5px solid #fbbf24;border-radius:14px;padding:14px 16px;
+  margin-bottom:16px;text-align:center}
+.lunch-box.on{display:block}
+.lunch-time{font-size:32px;font-weight:900;color:#92400e;font-variant-numeric:tabular-nums}
+.lunch-label{font-size:12px;color:#78350f;margin-bottom:4px;font-weight:600}
+.lunch-warn{font-size:13px;color:#ef4444;font-weight:700;margin-top:6px;display:none}
+/* Botones de marcación */
+.btns-main{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:8px}
+.btns-lunch{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;display:none}
+.btn{border:none;border-radius:14px;font-size:14px;font-weight:800;cursor:pointer;
+  padding:15px 10px;transition:transform .08s,box-shadow .15s,opacity .15s;
+  display:flex;align-items:center;justify-content:center;gap:6px}
+.btn:active{transform:translateY(1px)}
+.btn:disabled{opacity:.38;cursor:not-allowed;box-shadow:none}
+.btn-in {background:linear-gradient(135deg,#3b82f6,#1d4ed8);color:#fff;
+  box-shadow:0 6px 20px rgba(37,99,235,.3)}
+.btn-out{background:linear-gradient(135deg,#10b981,#059669);color:#fff;
+  box-shadow:0 6px 20px rgba(16,185,129,.3)}
+.btn-lunch-out{background:linear-gradient(135deg,#f59e0b,#d97706);color:#fff;font-size:13px}
+.btn-lunch-in {background:linear-gradient(135deg,#8b5cf6,#7c3aed);color:#fff;font-size:13px}
+.btn-reset{width:100%;background:#f8fafc;color:#64748b;border:1.5px solid #e2e8f0;
+  font-size:13px;margin-top:4px;border-radius:12px;padding:11px;
+  display:none;cursor:pointer;font-weight:600}
+/* Footer */
+.footer{text-align:center;margin-top:14px}
+.footer a{font-size:12px;color:#94a3b8;text-decoration:none;font-weight:500}
+.footer a:hover{color:#64748b}
+.note{background:#f8fafc;border-radius:12px;padding:10px 14px;font-size:12px;
+  color:#64748b;line-height:1.5;margin-bottom:12px;border:1px dashed #e2e8f0}
 </style>
 </head>
 <body>
-<div class="shell">
 <div class="card">
-  <div class="header">
-    <h2>⚡ KRONOS 3.0</h2>
-    <div class="time-badge" id="clock">--:--</div>
+  <div class="brand">
+    <div class="brand-name">
+      <div class="brand-icon">⚡</div>
+      KRONOS <span style="color:#3b82f6">3.0</span>
+    </div>
+    <div class="clock-badge" id="clock">--:--:--</div>
   </div>
 
-  <div class="panel">
-    <div class="panel-title">Identificacion</div>
+  <div class="section">
+    <div class="section-title">Identificación</div>
     <div class="field">
-      <label>ID del colaborador (cedula)</label>
-      <input type="text" id="empId" placeholder="Sin puntos ni comas" inputmode="numeric" autocomplete="off">
+      <label>Cédula del colaborador</label>
+      <input type="text" id="empId" placeholder="Sin puntos ni comas" inputmode="numeric" autocomplete="new-password">
     </div>
     <div class="field">
       <label>Ecosistema</label>
       <select id="ecosystem">
-        <option value="">Cargando...</option>
+        <option value="">Cargando áreas...</option>
       </select>
     </div>
-    <button class="btn-confirm" id="btnConfirm" onclick="buscarColaborador()">🔎 Confirmar</button>
+    <button class="btn-confirm" id="btnConfirm" onclick="buscarColaborador()" style="margin-top:4px">
+      <span>🔎</span> Confirmar identidad
+    </button>
   </div>
 
-  <div class="user-ok" id="userPanel">
-    <div class="user-name" id="userName"></div>
-    <div class="user-meta" id="userMeta"></div>
+  <div class="user-card" id="userCard">
+    <div class="user-name-display" id="userName"></div>
+    <div class="user-meta-display" id="userMeta"></div>
   </div>
 
-  <div class="status-box s-info" id="statusBox">
-    <div class="s-emoji">ℹ️</div>
-    <div id="statusText">Ingresa tu ID y ecosistema, luego confirma.</div>
+  <div class="status s-info" id="statusBox">
+    <span class="s-icon">ℹ️</span>
+    <span id="statusText">Ingresa tu cédula y selecciona tu ecosistema.</span>
   </div>
 
-  <!-- Timer de almuerzo -->
-  <div class="lunch-timer" id="lunchTimer">
-    <div class="lunch-time-label">⏱ Tiempo de almuerzo restante</div>
-    <div class="lunch-time-display" id="lunchTimeDisplay">60:00</div>
-    <div class="lunch-time-warning" id="lunchWarning">⚠️ ¡Quedan 10 minutos!</div>
+  <div class="lunch-box" id="lunchBox">
+    <div class="lunch-label">⏱ Tiempo de almuerzo restante</div>
+    <div class="lunch-time" id="lunchTime">60:00</div>
+    <div class="lunch-warn" id="lunchWarn">⚠️ ¡Quedan 10 minutos!</div>
   </div>
 
-  <div class="btns">
-    <button class="btn-entry" id="btnEntry"  onclick="marcar('entry')"  disabled>📥 Entrada</button>
-    <button class="btn-exit"  id="btnExit"   onclick="marcar('exit')"   disabled>📤 Salida</button>
+  <div class="btns-main">
+    <button class="btn btn-in"  id="btnEntry"    onclick="marcar('entry')"    disabled>📥 Entrada</button>
+    <button class="btn btn-out" id="btnExit"     onclick="marcar('exit')"     disabled>📤 Salida</button>
   </div>
-
-  <!-- Botones de almuerzo - solo visibles si el ecosistema lo permite -->
-  <div class="btns-lunch" id="lunchBtns" style="display:none">
-    <button class="btn-lunch-out" id="btnLunchOut" onclick="marcar('lunch_out')" disabled>🍽 Salir almuerzo</button>
-    <button class="btn-lunch-in"  id="btnLunchIn"  onclick="marcar('lunch_in')"  disabled>☕ Volver almuerzo</button>
+  <div class="btns-lunch" id="lunchBtns">
+    <button class="btn btn-lunch-out" id="btnLunchOut" onclick="marcar('lunch_out')" disabled>🍽 Almuerzo</button>
+    <button class="btn btn-lunch-in"  id="btnLunchIn"  onclick="marcar('lunch_in')"  disabled>☕ Regresar</button>
   </div>
 
   <button class="btn-reset" id="btnReset" onclick="resetForm()">↩ Marcar otro colaborador</button>
 
-  <div class="footer-note" id="footerNote">La ubicacion puede ser solicitada segun tu area.</div>
-  <div class="admin-link"><a href="/login.html">Acceso administradores</a></div>
-</div>
+  <div class="note" id="footerNote">La ubicación puede ser solicitada según tu área de trabajo.</div>
+
+  <div class="footer"><a href="/login.html">Acceso administradores →</a></div>
 </div>
 
 <script>
-const API = '';
-let busy = false;
-let confirmedUser = null;
-let lunchConfig = { manual_lunch: false, lunch_minutes: 60 };
-let lunchInterval = null;
-let lunchSecondsLeft = 0;
-let warned10min = false;
+const API='';
+let busy=false, confirmedUser=null;
+let lunchCfg={manual_lunch:false,lunch_minutes:60};
+let lunchInterval=null, lunchSecs=0, warned10=false;
 
 // Reloj
-function updateClock() {
-  document.getElementById('clock').textContent =
-    new Date().toLocaleTimeString('es-CO',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+setInterval(()=>{
+  document.getElementById('clock').textContent=new Date().toLocaleTimeString('es-CO',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+},1000);
+
+// Cargar áreas desde la API o fallback hardcodeado
+const DEFAULT_AREAS=['Accounting and treasury','CEDI','Instalaciones','Noc','Relevamiento','Sac','Soporte en sitio','Soporte N2','Ventas','Ventas Bog'];
+function cargarAreas(list){
+  const sel=document.getElementById('ecosystem');
+  sel.innerHTML='<option value="">Selecciona tu ecosistema...</option>';
+  list.forEach(a=>{ const o=document.createElement('option'); o.value=o.textContent=a; sel.appendChild(o); });
 }
-setInterval(updateClock, 1000); updateClock();
+fetch(API+'/api/public/areas')
+  .then(r=>r.json())
+  .then(d=>{ if(d.ok&&d.areas&&d.areas.length) cargarAreas(d.areas); else cargarAreas(DEFAULT_AREAS); })
+  .catch(()=>cargarAreas(DEFAULT_AREAS));
 
-// Cargar ecosistemas
-fetch(API + '/api/public/areas')
-  .then(r => r.json())
-  .then(d => {
-    const sel = document.getElementById('ecosystem');
-    sel.innerHTML = '<option value="">Selecciona tu area...</option>';
-    (d.areas || []).forEach(a => {
-      const opt = document.createElement('option');
-      opt.value = opt.textContent = a;
-      sel.appendChild(opt);
-    });
-  }).catch(() => {
-    const sel = document.getElementById('ecosystem');
-    sel.innerHTML = '<option value="">Selecciona...</option>';
-    ['Instalaciones','Sac','Ventas','Ventas Bog','Accounting and treasury',
-     'Soporte N2','Soporte en sitio','CEDI','Relevamiento','Noc'].forEach(a => {
-      const opt = document.createElement('option');
-      opt.value = opt.textContent = a;
-      sel.appendChild(opt);
-    });
-  });
-
-// Solicitar permiso de notificaciones al cargar
-if ('Notification' in window && Notification.permission === 'default') {
-  Notification.requestPermission();
+// Notificaciones
+if('Notification'in window&&Notification.permission==='default') Notification.requestPermission();
+function beep(freq,dur,type){
+  try{
+    const ctx=new(window.AudioContext||window.webkitAudioContext)();
+    const o=ctx.createOscillator(),g=ctx.createGain();
+    o.connect(g);g.connect(ctx.destination);
+    o.frequency.value=freq||880;o.type=type||'sine';
+    g.gain.setValueAtTime(0.3,ctx.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.001,ctx.currentTime+(dur||0.4));
+    o.start();o.stop(ctx.currentTime+(dur||0.4));
+  }catch(e){}
 }
-
-// Sonido beep via Web Audio API
-function playBeep(frequency, duration, type) {
-  try {
-    const ctx = new (window.AudioContext || window.webkitAudioContext)();
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
-    osc.connect(gain); gain.connect(ctx.destination);
-    osc.frequency.value = frequency || 880;
-    osc.type = type || 'sine';
-    gain.gain.setValueAtTime(0.3, ctx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + (duration || 0.5));
-    osc.start(ctx.currentTime);
-    osc.stop(ctx.currentTime + (duration || 0.5));
-  } catch(e) {}
+function notify(title,body){
+  if('Notification'in window&&Notification.permission==='granted') new Notification(title,{body});
 }
 
-function playWarningSound() {
-  playBeep(440, 0.3); setTimeout(() => playBeep(440, 0.3), 350); setTimeout(() => playBeep(440, 0.3), 700);
-}
-
-function playEndSound() {
-  playBeep(880, 0.2); setTimeout(() => playBeep(660, 0.2), 250); setTimeout(() => playBeep(440, 0.4), 500);
-}
-
-function sendNotification(title, body) {
-  if ('Notification' in window && Notification.permission === 'granted') {
-    new Notification(title, { body, icon: '/favicon.ico' });
-  }
-}
-
-// Iniciar timer de almuerzo
-function startLunchTimer(minutes) {
-  lunchSecondsLeft = (minutes || 60) * 60;
-  warned10min = false;
-  const timerEl = document.getElementById('lunchTimer');
-  const display = document.getElementById('lunchTimeDisplay');
-  const warning = document.getElementById('lunchWarning');
-  timerEl.classList.add('visible');
-  warning.style.display = 'none';
-
-  if (lunchInterval) clearInterval(lunchInterval);
-
-  lunchInterval = setInterval(() => {
-    lunchSecondsLeft--;
-    const m = Math.floor(lunchSecondsLeft / 60);
-    const s = lunchSecondsLeft % 60;
-    display.textContent = String(m).padStart(2,'0') + ':' + String(s).padStart(2,'0');
-
-    // Alerta 10 minutos
-    if (lunchSecondsLeft === 600 && !warned10min) {
-      warned10min = true;
-      warning.style.display = 'block';
-      timerEl.style.background = '#fff7ed';
-      timerEl.style.borderColor = '#f59e0b';
-      playWarningSound();
-      sendNotification('⏱ Almuerzo - 10 minutos', 'Quedan 10 minutos de almuerzo. Prepárate para volver.');
+// Timer almuerzo
+function startTimer(mins){
+  lunchSecs=(mins||60)*60; warned10=false;
+  const box=document.getElementById('lunchBox'),
+        disp=document.getElementById('lunchTime'),
+        warn=document.getElementById('lunchWarn');
+  box.classList.add('on'); warn.style.display='none';
+  if(lunchInterval)clearInterval(lunchInterval);
+  lunchInterval=setInterval(()=>{
+    lunchSecs--;
+    const m=Math.floor(lunchSecs/60),s=lunchSecs%60;
+    disp.textContent=String(m).padStart(2,'0')+':'+String(s).padStart(2,'0');
+    if(lunchSecs===600&&!warned10){
+      warned10=true; warn.style.display='block';
+      beep(440,.3); setTimeout(()=>beep(440,.3),400); setTimeout(()=>beep(440,.3),800);
+      notify('⏱ Almuerzo - 10 minutos','Quedan 10 minutos. Prepárate para volver.');
     }
-
-    // Timer termino
-    if (lunchSecondsLeft <= 0) {
+    if(lunchSecs<=0){
       clearInterval(lunchInterval);
-      lunchInterval = null;
-      display.textContent = '00:00';
-      timerEl.style.background = '#fff1f2';
-      timerEl.style.borderColor = '#fecdd3';
-      warning.textContent = '🔔 ¡Tu tiempo de almuerzo terminó!';
-      warning.style.display = 'block';
-      warning.style.color = '#9f1239';
-      playEndSound(); setTimeout(playEndSound, 1000);
-      sendNotification('🔔 Tiempo de almuerzo terminado', 'Tu tiempo de almuerzo ha terminado. ¡Regresa al trabajo!');
+      disp.textContent='00:00';
+      box.style.background='linear-gradient(135deg,#fff1f2,#fecdd3)';
+      box.style.borderColor='#fca5a5';
+      warn.textContent='🔔 ¡Tiempo de almuerzo terminado!';
+      warn.style.display='block'; warn.style.color='#9f1239';
+      beep(880,.2); setTimeout(()=>beep(660,.2),250); setTimeout(()=>beep(440,.4),500);
+      setTimeout(()=>{beep(880,.2);setTimeout(()=>beep(660,.2),250);},1200);
+      notify('🔔 Regresa al trabajo','Tu tiempo de almuerzo terminó.');
     }
-
-    // Advertencias adicionales cada minuto en los ultimos 5
-    if (lunchSecondsLeft > 0 && lunchSecondsLeft <= 300 && lunchSecondsLeft % 60 === 0) {
-      playBeep(660, 0.2);
-    }
-  }, 1000);
+    if(lunchSecs>0&&lunchSecs<=300&&lunchSecs%60===0) beep(660,.2);
+  },1000);
+}
+function stopTimer(){
+  if(lunchInterval){clearInterval(lunchInterval);lunchInterval=null;}
+  const box=document.getElementById('lunchBox');
+  box.classList.remove('on');
+  box.style.background=''; box.style.borderColor='';
+  document.getElementById('lunchWarn').style.display='none';
 }
 
-function stopLunchTimer() {
-  if (lunchInterval) { clearInterval(lunchInterval); lunchInterval = null; }
-  document.getElementById('lunchTimer').classList.remove('visible');
-  document.getElementById('lunchWarning').style.display = 'none';
-  document.getElementById('lunchTimer').style.background = '';
-  document.getElementById('lunchTimer').style.borderColor = '';
-}
-
-// Buscar y confirmar colaborador
-async function buscarColaborador() {
-  if (busy) return;
-  const id  = document.getElementById('empId').value.trim();
-  const eco = document.getElementById('ecosystem').value;
-  if (!id || !eco) { setStatus('s-warn','⚠️','Ingresa tu ID y selecciona tu ecosistema.'); return; }
-
-  busy = true;
-  document.getElementById('btnConfirm').disabled = true;
+// Buscar colaborador
+async function buscarColaborador(){
+  if(busy)return;
+  const id=document.getElementById('empId').value.trim();
+  const eco=document.getElementById('ecosystem').value;
+  if(!id||!eco){setStatus('s-warn','⚠️','Ingresa tu cédula y selecciona tu ecosistema.');return;}
+  busy=true; document.getElementById('btnConfirm').disabled=true;
   setStatus('s-info','⏳','Verificando...');
-
-  try {
-    // Verificar colaborador y config de almuerzo en paralelo
-    const [empRes, lunchRes] = await Promise.all([
-      fetch(API + '/api/public/employee/' + id + '?ecosystem=' + encodeURIComponent(eco)),
-      fetch(API + '/api/public/area-lunch/' + encodeURIComponent(eco))
+  try{
+    const[empR,lunchR]=await Promise.all([
+      fetch(API+'/api/public/employee/'+encodeURIComponent(id)+'?ecosystem='+encodeURIComponent(eco)),
+      fetch(API+'/api/public/area-lunch/'+encodeURIComponent(eco))
     ]);
-    const empData   = await empRes.json();
-    const lunchData = await lunchRes.json().catch(() => ({ manual_lunch: false, lunch_minutes: 60 }));
-
-    if (empData.ok) {
-      confirmedUser = { id, ecosystem: eco, full_name: empData.employee.full_name, cargo: empData.employee.cargo };
-      lunchConfig   = { manual_lunch: lunchData.manual_lunch || false, lunch_minutes: lunchData.lunch_minutes || 60 };
-
-      document.getElementById('userPanel').classList.add('visible');
-      document.getElementById('userName').textContent = empData.employee.full_name;
-      document.getElementById('userMeta').textContent = empData.employee.cargo + ' · ' + eco;
-
-      // Mostrar botones de almuerzo solo si el ecosistema lo permite
-      const lunchBtns = document.getElementById('lunchBtns');
-      lunchBtns.style.display = lunchConfig.manual_lunch ? 'grid' : 'none';
-
-      setAllEnabled(true);
-      const lunchMsg = lunchConfig.manual_lunch
-        ? '\n🍽 Tu area permite marcar almuerzo manualmente (' + lunchConfig.lunch_minutes + ' min).'
-        : '';
-      setStatus('s-ok','✅','Listo ' + empData.employee.full_name.split(' ')[0] + '. Selecciona tu marcacion.' + lunchMsg);
-    } else {
-      confirmedUser = null;
-      setStatus('s-error','⛔', empData.message || 'ID o ecosistema no encontrado.');
-      setAllEnabled(false);
+    const emp=await empR.json();
+    const lunch=await lunchR.json().catch(()=>({manual_lunch:false,lunch_minutes:60}));
+    if(emp.ok){
+      confirmedUser={id,ecosystem:eco,full_name:emp.employee.full_name,cargo:emp.employee.cargo};
+      lunchCfg={manual_lunch:lunch.manual_lunch||false,lunch_minutes:lunch.lunch_minutes||60};
+      document.getElementById('userCard').classList.add('visible');
+      document.getElementById('userName').textContent=emp.employee.full_name;
+      document.getElementById('userMeta').textContent=emp.employee.cargo+' · '+eco;
+      document.getElementById('lunchBtns').style.display=lunchCfg.manual_lunch?'grid':'none';
+      setEnabled(true);
+      const lunchMsg=lunchCfg.manual_lunch?'\n🍽 Almuerzo manual habilitado ('+lunchCfg.lunch_minutes+' min)':'';
+      setStatus('s-ok','✅','Bienvenid@ '+emp.employee.full_name.split(' ')[0]+'!'+lunchMsg);
+      document.getElementById('footerNote').textContent=
+        geoObligatoria(eco)?'📍 Tu área requiere ubicación obligatoria.':
+        requiereGeo(eco)?'📍 Se solicitará tu ubicación como referencia.':
+        'Marcación lista.';
+    }else{
+      confirmedUser=null; setEnabled(false);
+      setStatus('s-error','⛔',emp.message||'No encontrado. Verifica cédula y ecosistema.');
     }
-  } catch(e) {
-    setStatus('s-error','⛔','Error de conexion.');
-    setAllEnabled(false);
-  }
-  busy = false;
-  document.getElementById('btnConfirm').disabled = false;
+  }catch(e){ setEnabled(false); setStatus('s-error','⛔','Error de conexión.'); }
+  busy=false; document.getElementById('btnConfirm').disabled=false;
 }
 
 // Marcar
-async function marcar(type) {
-  if (busy || !confirmedUser) return;
-  busy = true;
-  setAllEnabled(false);
-
-  const eco = confirmedUser.ecosystem;
-  const bloqueaSin = geoObligatoria(eco);
-  const pideGeo    = requiereGeo(eco);
-
-  if (bloqueaSin) setStatus('s-info','📍','Solicitando ubicacion obligatoria...');
+async function marcar(type){
+  if(busy||!confirmedUser)return;
+  busy=true; setEnabled(false);
+  const eco=confirmedUser.ecosystem;
+  const bloq=geoObligatoria(eco), pide=requiereGeo(eco);
+  if(bloq)setStatus('s-info','📍','Solicitando ubicación...');
   else setStatus('s-info','⏳','Registrando...');
-
-  try {
-    const [ipData, geoData] = await Promise.all([
-      getIP(),
-      pideGeo ? getGeo() : Promise.resolve({lat:null,lon:null})
-    ]);
-
-    if (bloqueaSin && (!geoData.lat || !geoData.lon)) {
-      setStatus('s-error','❌','No se pudo obtener ubicacion.\n1. Activa el GPS\n2. Permite ubicacion en el navegador\n3. Reintenta');
-      busy = false; setAllEnabled(true); return;
+  try{
+    const[ipD,geoD]=await Promise.all([getIP(),pide?getGeo():Promise.resolve({lat:null,lon:null})]);
+    if(bloq&&(!geoD.lat||!geoD.lon)){
+      setStatus('s-error','❌','No se obtuvo ubicación.\n1. Activa el GPS\n2. Permite ubicación en el navegador');
+      busy=false; setEnabled(true); return;
     }
-
-    const res = await fetch(API + '/api/public/mark', {
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({
-        employee_id: confirmedUser.id,
-        ecosystem: confirmedUser.ecosystem,
-        type,
-        lat: geoData.lat, lon: geoData.lon,
-        geo_accuracy_m: geoData.accuracy,
-        ip_address: ipData.ip,
-        ip_data: ipData
-      })
+    const r=await fetch(API+'/api/public/mark',{
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({employee_id:confirmedUser.id,ecosystem:confirmedUser.ecosystem,
+        type,lat:geoD.lat,lon:geoD.lon,geo_accuracy_m:geoD.accuracy,ip_address:ipD.ip,ip_data:ipD})
     });
-    const d = await res.json();
-
-    if (d.ok) {
-      const isWarn = d.message && (d.message.includes('Tardanza') || d.message.includes('tarde'));
-      setStatus(isWarn ? 's-warn' : 's-ok', isWarn ? '⚠️' : '✅', d.message);
-
-      // Gestionar timer de almuerzo
-      if (type === 'lunch_out' && lunchConfig.manual_lunch) {
-        startLunchTimer(lunchConfig.lunch_minutes);
-        setAllEnabled(true); // mantener botones activos durante almuerzo
-        busy = false;
-        return;
-      }
-      if (type === 'lunch_in') {
-        stopLunchTimer();
-      }
-      if (type === 'exit') {
-        stopLunchTimer();
-        document.getElementById('btnReset').style.display = 'block';
-        setAllEnabled(false);
-      } else if (type === 'entry') {
-        document.getElementById('btnReset').style.display = 'block';
-        setAllEnabled(true);
-      } else {
-        setAllEnabled(true);
-      }
-    } else {
-      const isWarn = d.message && (d.message.includes('ya tienes') || d.message.includes('cerrada') || d.message.includes('Intervalo') || d.message.includes('maximo'));
-      setStatus(isWarn ? 's-warn' : 's-error', isWarn ? '⚠️' : '⛔', d.message);
-      setAllEnabled(true);
+    const d=await r.json();
+    if(d.ok){
+      const warn=d.message&&d.message.includes('tarde');
+      setStatus(warn?'s-warn':'s-ok',warn?'⚠️':'✅',d.message);
+      if(type==='lunch_out'&&lunchCfg.manual_lunch){startTimer(lunchCfg.lunch_minutes);busy=false;setEnabled(true);return;}
+      if(type==='lunch_in') stopTimer();
+      if(type==='exit'){stopTimer();document.getElementById('btnReset').style.display='block';setEnabled(false);}
+      else{document.getElementById('btnReset').style.display='block';setEnabled(type!=='exit');}
+    }else{
+      const w=d.message&&(d.message.includes('ya tienes')||d.message.includes('cerrada')||d.message.includes('Intervalo')||d.message.includes('maximo'));
+      setStatus(w?'s-warn':'s-error',w?'⚠️':'⛔',d.message);
+      setEnabled(true);
     }
-  } catch(e) {
-    setStatus('s-error','⛔','Error de conexion.');
-    setAllEnabled(true);
-  }
-  busy = false;
+  }catch(e){setStatus('s-error','⛔','Error de conexión.');setEnabled(true);}
+  busy=false;
 }
 
-function resetForm() {
-  confirmedUser = null;
-  lunchConfig = { manual_lunch: false, lunch_minutes: 60 };
-  stopLunchTimer();
-  document.getElementById('empId').value = '';
-  document.getElementById('ecosystem').value = '';
-  document.getElementById('userPanel').classList.remove('visible');
-  document.getElementById('btnReset').style.display = 'none';
-  document.getElementById('lunchBtns').style.display = 'none';
-  setAllEnabled(false);
-  setStatus('s-info','ℹ️','Ingresa tu ID y ecosistema, luego confirma.');
+function resetForm(){
+  confirmedUser=null; lunchCfg={manual_lunch:false,lunch_minutes:60};
+  stopTimer();
+  document.getElementById('empId').value='';
+  document.getElementById('ecosystem').value='';
+  document.getElementById('userCard').classList.remove('visible');
+  document.getElementById('btnReset').style.display='none';
+  document.getElementById('lunchBtns').style.display='none';
+  setEnabled(false);
+  setStatus('s-info','ℹ️','Ingresa tu cédula y selecciona tu ecosistema.');
+  document.getElementById('footerNote').textContent='La ubicación puede ser solicitada según tu área de trabajo.';
   document.getElementById('empId').focus();
 }
 
-function setStatus(cls, emoji, text) {
-  const box = document.getElementById('statusBox');
-  box.className = 'status-box ' + cls;
-  box.innerHTML = '<div class="s-emoji">' + emoji + '</div><div id="statusText">' + text + '</div>';
+function setStatus(cls,icon,txt){
+  const b=document.getElementById('statusBox');
+  b.className='status '+cls;
+  b.innerHTML='<span class="s-icon">'+icon+'</span><span id="statusText">'+txt+'</span>';
 }
-
-function setAllEnabled(state) {
-  ['btnEntry','btnExit','btnLunchOut','btnLunchIn'].forEach(id => {
-    const el = document.getElementById(id);
-    if (el) el.disabled = !state;
+function setEnabled(on){
+  ['btnEntry','btnExit','btnLunchOut','btnLunchIn'].forEach(id=>{
+    const el=document.getElementById(id); if(el) el.disabled=!on;
   });
 }
-
-function requiereGeo(eco) {
-  return ['soporte en sitio','instalaciones','ventas bog','accounting and treasury']
-    .includes((eco||'').toLowerCase().trim());
+function requiereGeo(e){return['soporte en sitio','instalaciones','ventas bog','accounting and treasury'].includes((e||'').toLowerCase().trim());}
+function geoObligatoria(e){return['soporte en sitio','ventas bog','accounting and treasury'].includes((e||'').toLowerCase().trim());}
+async function getIP(){
+  try{const r=await fetch('https://ipapi.co/json/',{signal:AbortSignal.timeout(3000)});return await r.json();}
+  catch{return{ip:'N/A'};}
 }
-function geoObligatoria(eco) {
-  return ['soporte en sitio','ventas bog','accounting and treasury']
-    .includes((eco||'').toLowerCase().trim());
-}
-
-async function getIP() {
-  try {
-    const r = await fetch('https://ipapi.co/json/',{signal:AbortSignal.timeout(3000)});
-    return await r.json();
-  } catch { return {ip:'N/A'}; }
-}
-
-async function getGeo() {
-  return new Promise(resolve => {
-    if (!navigator.geolocation) { resolve({lat:null,lon:null}); return; }
+async function getGeo(){
+  return new Promise(res=>{
+    if(!navigator.geolocation){res({lat:null,lon:null});return;}
     navigator.geolocation.getCurrentPosition(
-      p => resolve({lat:p.coords.latitude, lon:p.coords.longitude, accuracy:p.coords.accuracy}),
-      () => resolve({lat:null,lon:null}),
-      {enableHighAccuracy:true, timeout:8000, maximumAge:0}
+      p=>res({lat:p.coords.latitude,lon:p.coords.longitude,accuracy:p.coords.accuracy}),
+      ()=>res({lat:null,lon:null}),{enableHighAccuracy:true,timeout:8000,maximumAge:0}
     );
   });
 }
-
-document.getElementById('empId').addEventListener('keydown', e => { if(e.key==='Enter') buscarColaborador(); });
-document.getElementById('ecosystem').addEventListener('change', () => {
-  confirmedUser = null;
-  document.getElementById('userPanel').classList.remove('visible');
-  document.getElementById('lunchBtns').style.display = 'none';
-  setAllEnabled(false);
-  stopLunchTimer();
+document.getElementById('empId').addEventListener('keydown',e=>{if(e.key==='Enter')buscarColaborador();});
+document.getElementById('ecosystem').addEventListener('change',()=>{
+  confirmedUser=null;
+  document.getElementById('userCard').classList.remove('visible');
+  document.getElementById('lunchBtns').style.display='none';
+  setEnabled(false); stopTimer();
 });
 </script>
 </body>

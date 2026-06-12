@@ -165,10 +165,12 @@ function cargarAreas(list){
   sel.innerHTML='<option value="">Selecciona tu ecosistema...</option>';
   list.forEach(a=>{ const o=document.createElement('option'); const v=typeof a==='object'?(a.name||a):a; o.value=o.textContent=v; sel.appendChild(o); });
 }
-fetch(API+'/api/public/areas')
+const _areasCtrl=new AbortController();
+const _areasTimer=setTimeout(()=>{ _areasCtrl.abort(); cargarAreas(DEFAULT_AREAS); },5000);
+fetch(API+'/api/public/areas',{signal:_areasCtrl.signal})
   .then(r=>r.json())
-  .then(d=>{ if(d.ok&&d.areas&&d.areas.length) cargarAreas(d.areas); else cargarAreas(DEFAULT_AREAS); })
-  .catch(()=>cargarAreas(DEFAULT_AREAS));
+  .then(d=>{ clearTimeout(_areasTimer); if(d.ok&&d.areas&&d.areas.length) cargarAreas(d.areas); else cargarAreas(DEFAULT_AREAS); })
+  .catch(()=>{ clearTimeout(_areasTimer); cargarAreas(DEFAULT_AREAS); });
 
 // Notificaciones
 if('Notification'in window&&Notification.permission==='default') Notification.requestPermission();

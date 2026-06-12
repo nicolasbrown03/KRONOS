@@ -31,11 +31,26 @@ app.use('/api/public/mark', rateLimit({
 // RUTAS PÚBLICAS — sin autenticación (empleados marcando)
 // ─────────────────────────────────────────────────────────────
 
-// GET /api/public/areas — lista de ecosistemas activos
+// GET /api/public/areas — lista de ecosistemas activos (filtra nombres de personas)
+const VALID_ECOSYSTEMS = [
+  'accounting and treasury','cedi','instalaciones','noc','relevamiento',
+  'sac','soporte en sitio','soporte n2','ventas','ventas bog','tecnología',
+  'tecnologia','rrhh','sistemas','gerencia','juridico','juridica'
+];
+function isValidEcosystem(name) {
+  if (!name) return false;
+  const lower = name.toLowerCase().trim();
+  // Es válido si está en la lista conocida
+  if (VALID_ECOSYSTEMS.includes(lower)) return true;
+  // O si tiene 3 palabras o menos Y menos de 30 caracteres (no es nombre de persona)
+  const words = name.trim().split(/\s+/);
+  return words.length <= 3 && name.length <= 30;
+}
 app.get('/api/public/areas', async (req, res) => {
   try {
     const { rows } = await db.query('SELECT id, name FROM areas ORDER BY name');
-    res.json({ ok: true, areas: rows });
+    const areas = rows.filter(r => isValidEcosystem(r.name));
+    res.json({ ok: true, areas });
   } catch (err) {
     res.status(500).json({ ok: false, message: 'Error al obtener áreas.' });
   }
@@ -455,6 +470,7 @@ async function initAdmin() {
     );
     console.log(`✅ Admin inicial creado. Email: ${email}`);
   } catch (err) {
+   
     console.warn('initAdmin warning:', err.message);
   }
 }

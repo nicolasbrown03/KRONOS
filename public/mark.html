@@ -163,7 +163,7 @@ const DEFAULT_AREAS=['Accounting and treasury','CEDI','Instalaciones','Noc','Rel
 function cargarAreas(list){
   const sel=document.getElementById('ecosystem');
   sel.innerHTML='<option value="">Selecciona tu ecosistema...</option>';
-  list.forEach(a=>{ const o=document.createElement('option'); o.value=o.textContent=a; sel.appendChild(o); });
+  list.forEach(a=>{ const o=document.createElement('option'); const v=typeof a==='object'?(a.name||a):a; o.value=o.textContent=v; sel.appendChild(o); });
 }
 fetch(API+'/api/public/areas')
   .then(r=>r.json())
@@ -343,8 +343,4 @@ document.getElementById('ecosystem').addEventListener('change',()=>{
   confirmedUser=null;
   document.getElementById('userCard').classList.remove('visible');
   document.getElementById('lunchBtns').style.display='none';
-  setEnabled(false); stopTimer();
-});
-</script>
-</body>
-</html>
+  setEnabled(false); 
